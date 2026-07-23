@@ -1,0 +1,33 @@
+Run Development Environment:
+
+  To run application run:
+    ./run-dev.sh
+
+  (run-dev runs also setup-dev)
+
+
+  To check installed tools run:
+    ./setup-dev.sh
+
+
+  To clean up:
+    ./clean-dev.sh
+
+
+
+Run Staging Environment:
+  To run application run:
+    ./run-staging.sh
+
+  (run-staging runs also setup-staging)
+
+
+  To check installed tools run:
+    ./setup-staging.sh
+
+
+  To clean up:
+    ./clean-staging.sh
+
+
+
