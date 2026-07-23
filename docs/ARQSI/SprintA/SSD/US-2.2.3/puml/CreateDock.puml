@@ -1,0 +1,127 @@
+@startuml L5-CreateDock
+
+title Create Dock - Process View
+
+actor "Port Authority Officer" as ADMIN
+participant "CreateDock.html\n(SPA)" as SPA
+participant ":DockController" as CTRL
+participant ":DockService" as SVC
+participant ":VesselTypeRepository" as VREPO
+participant ":DockRepository" as DREPO
+participant ":PortManagementDB" as DB
+
+' =============== USER INTERACTION ===============
+group Fill & Submit Form
+    ADMIN -> SPA : fillForm(name, location, length, depth,\nmaxDraft, maxSTS, allowedVesselTypes[])
+    note right of ADMIN
+        Administrator fills the dock creation form\nand clicks "Create Dock"
+    end note
+end
+
+' =============== REQUEST FLOW ===============
+group Submit Request
+    SPA -> CTRL : POST /api/Dock\n{DockDto}
+    activate CTRL
+
+    CTRL -> SVC : AddAsync(DockDto)
+    activate SVC
+end
+
+' =============== VALIDATION PHASE ===============
+group Validate Input
+    SVC -> SVC : ValidateDock(dto)
+    note right of SVC
+        Validates required fields:\nName, Location, Length, Depth, MaxDraft, MaxSTS.\nEnsures MaxDraft ≤ Depth
+    end note
+
+    ' Check for duplicate name
+    SVC -> DREPO : GetByNameAsync(dto.Name)
+    activate DREPO
+    DREPO -> DB : SELECT * FROM Docks WHERE Name = ?
+    activate DB
+    DB --> DREPO : null (no duplicates)
+    deactivate DB
+    DREPO --> SVC : null
+    deactivate DREPO
+
+    ' Validate vessel types (foreign key integrity)
+    alt AllowedVesselTypes not empty
+        SVC -> VREPO : GetByIdsAsync(vesselTypeIds)
+        activate VREPO
+        VREPO -> DB : SELECT * FROM VesselTypes WHERE Id IN (ids)
+        activate DB
+        DB --> VREPO : List<VesselType>
+        deactivate DB
+        VREPO --> SVC : List<VesselType>
+        deactivate VREPO
+
+        alt Some vessel types not found
+            SVC --> CTRL : throws DomainValidationException("Vessel types not found")
+            CTRL --> SPA : 400 Bad Request + error
+            SPA --> ADMIN : showError("Invalid vessel types")
+            deactivate CTRL
+
+        end alt
+    end alt
+end
+
+' =============== CREATION PHASE ===============
+group Create Dock Entity
+    SVC -> SVC : new Dock(name, location, length,\ndepth, maxDraft, maxSTS, allowedVesselTypes)
+    note right of SVC
+        Creates domain entity with IsActive = true\nand initializes STSCranes = []
+    end note
+
+    SVC -> DREPO : AddAsync(dock)
+    activate DREPO
+    DREPO -> DB : INSERT INTO Docks(...)
+    activate DB
+    DB --> DREPO : success
+    deactivate DB
+    DREPO --> SVC : success
+    deactivate DREPO
+
+    SVC -> DREPO : SaveChangesAsync()
+    activate DREPO
+    DREPO -> DB : COMMIT TRANSACTION
+    activate DB
+    DB --> DREPO : success
+    deactivate DB
+    DREPO --> SVC : success
+    deactivate DREPO
+
+    SVC -> SVC : ConvertToDto(dock)
+    SVC --> CTRL : DockDto
+    deactivate SVC
+end
+
+' =============== RESPONSE PHASE ===============
+group Return Result
+    CTRL --> SPA : 201 Created + DockDto
+    deactivate CTRL
+
+    SPA --> ADMIN : "Dock created successfully!"
+    note right of SPA
+        Displays confirmation message\nand redirects to dock details page
+    end note
+end
+
+' =============== ERROR HANDLING ===============
+alt Validation failed
+    SVC --> CTRL : throws DomainValidationException
+    CTRL --> SPA : 400 Bad Request + "Validation failed"
+    SPA --> ADMIN : showError("Validation failed")
+end
+
+alt Duplicate dock name
+    SVC --> CTRL : throws BusinessRuleViolationException
+    CTRL --> SPA : 400 Bad Request + "Dock with this name already exists"
+    SPA --> ADMIN : showError("Duplicate dock name")
+end
+
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> ADMIN : showError("Failed to create dock")
+end
+
+@enduml

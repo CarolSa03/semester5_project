@@ -1,0 +1,28 @@
+@startuml GenericSequenceDiagramUpdateX
+title Level 1 Sequence Diagram (SD) - Update Feature
+autonumber
+
+actor ":User" as User
+participant ":System" as System
+
+
+User -> System: Initiates update (e.g. clicks edit)
+activate System
+
+System -->> User: Displays edit form with pre-filled data
+
+User -> System: Submits updated form
+
+alt Resource updated successfully
+    System -->> User: Shows success toast
+
+else Resource with {id} does not exist
+    System -->> User: Shows error: Resource not found
+
+else Invalid data provided
+    System -->> User: Shows error: Invalid data / Business rule violation
+end
+
+deactivate System
+
+@enduml

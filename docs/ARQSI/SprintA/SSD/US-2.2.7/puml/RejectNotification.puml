@@ -1,0 +1,114 @@
+@startuml L5-RejectVesselVisitNotification
+
+title Reject Vessel Visit Notification - Process View
+
+actor "Port Authority Officer" as OFFICER
+participant "ViewNotification.html\n(SPA)" as SPA
+participant ":VesselVisitNotificationController" as CTRL
+participant ":VesselVisitNotificationService" as SVC
+participant ":VesselVisitNotificationRepository" as NREPO
+participant ":PortManagementDB" as DB
+
+' ========================= USER ACTION =========================
+group Reject Notification
+    OFFICER -> SPA : click "Reject" and enter RejectionReason
+    note right of OFFICER
+        Officer rejects a pending notification,\nproviding a mandatory justification.
+    end note
+end
+
+' ========================= REQUEST FLOW =========================
+group Submit Rejection Request
+    SPA -> CTRL : PATCH /api/vessel-visit-notifications/{businessId}/reject\n{RejectionReason}
+    activate CTRL
+
+    CTRL -> SVC : RejectAsync(businessId, rejectionReason, officerId)
+    activate SVC
+end
+
+' ========================= RETRIEVE & VALIDATE =========================
+group Retrieve Notification
+    SVC -> NREPO : GetByBusinessIdAsync(businessId)
+    activate NREPO
+    NREPO -> DB : SELECT * FROM VesselVisitNotifications WHERE BusinessId = ?
+    activate DB
+    DB --> NREPO : VesselVisitNotification or null
+    deactivate DB
+    NREPO --> SVC : VesselVisitNotification or null
+    deactivate NREPO
+
+    alt Notification not found
+        SVC --> CTRL : throws DomainValidationException("Notification not found")
+        CTRL --> SPA : 404 Not Found
+        SPA --> OFFICER : showError("Notification not found")
+        deactivate CTRL
+
+    end alt
+end
+
+group Validate Rejection
+    note right of SVC
+        • Must be PendingApproval<br>
+        • RejectionReason required<br>
+        • Reason ≥ 10 characters<br>
+        • If includes "reject", must be ≥ 20 chars
+    end note
+
+    alt Status != PendingApproval
+        SVC --> CTRL : throws BusinessRuleViolationException("Invalid status for rejection")
+        CTRL --> SPA : 400 Bad Request
+        SPA --> OFFICER : showError("Only pending notifications can be rejected")
+        deactivate CTRL
+
+    end alt
+
+    alt Missing or too short reason
+        SVC --> CTRL : throws DomainValidationException("Reason too short or missing")
+        CTRL --> SPA : 400 Bad Request
+        SPA --> OFFICER : showError("Provide a detailed rejection reason")
+        deactivate CTRL
+
+    end alt
+end
+
+' ========================= REJECTION =========================
+group Reject and Save
+    SVC -> SVC : Update entity fields\nStatus = Rejected\nRejectionReason = rejectionReason\nRejectedBy = officerId\nRejectedAt = UtcNow
+    note right of SVC
+        Sets rejection details and logs officer + timestamp
+    end note
+
+    SVC -> NREPO : UpdateAsync(notification)
+    activate NREPO
+    NREPO -> DB : UPDATE VesselVisitNotifications SET ... Status='Rejected' ...
+    activate DB
+    DB --> NREPO : success
+    deactivate DB
+    NREPO --> SVC : success
+    deactivate NREPO
+
+    SVC --> CTRL : success
+    deactivate SVC
+end
+
+' ========================= RESPONSE =========================
+group Return Result
+    CTRL --> SPA : 204 No Content
+    deactivate CTRL
+
+    SPA --> OFFICER : showSuccess("Notification rejected successfully")
+end
+
+' ========================= ERROR HANDLING =========================
+alt Validation failed
+    SVC --> CTRL : throws DomainValidationException
+    CTRL --> SPA : 400 Bad Request + message
+    SPA --> OFFICER : showError("Validation failed")
+end
+
+alt Internal error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> OFFICER : showError("System error during rejection")
+end
+
+@enduml

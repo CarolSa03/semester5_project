@@ -1,0 +1,111 @@
+@startuml
+
+skinparam backgroundColor white
+skinparam component {
+    BackgroundColor #ADD8E6
+    BorderColor #000000
+}
+skinparam rectangle {
+    BackgroundColor #ADD8E6
+    BorderColor #000000
+}
+
+' ============================================
+' BOLINHAS (UI + API) — EXACTO COMO NO MODELO
+' ============================================
+circle "UI Staff" as ui_staff #ADD8E6
+circle "API Staff" as api_staff #ADD8E6
+
+circle "UI Dock" as ui_dock #ADD8E6
+circle "API Dock" as api_dock #ADD8E6
+
+circle "UI PhysicalR" as ui_physical #ADD8E6
+circle "API PhysicalR" as api_physical #ADD8E6
+
+circle "UI Qualif" as ui_qualification #ADD8E6
+circle "API Qualif" as api_qualification #ADD8E6
+
+circle "UI Storage" as ui_storage #ADD8E6
+circle "API Storage" as api_storage #ADD8E6
+
+circle "UI ShipOrg" as ui_shiporg #ADD8E6
+circle "API ShipOrg" as api_shiporg #ADD8E6
+
+circle "UI ShipRep" as ui_shiprep #ADD8E6
+circle "API ShipRep" as api_shiprep #ADD8E6
+
+circle "UI VType" as ui_vtype #ADD8E6
+circle "API VType" as api_vtype #ADD8E6
+
+circle "UI VRecord" as ui_vrecord #ADD8E6
+circle "API VRecord" as api_vrecord #ADD8E6
+
+circle "UI VNotif" as ui_vnotif #ADD8E6
+circle "API VNotif" as api_vnotif #ADD8E6
+
+
+' ============================================
+' CONTAINER PRINCIPAL (CAIXA GRANDE)
+' ============================================
+rectangle "<<component>>\n<<C4 System>>\nPortManagement" as pms {
+
+    component "<<component>>\nStaff\nManagement" as staff_mgmt
+    component "<<component>>\nDock\nManagement" as dock_mgmt
+    component "<<component>>\nPhysical Resource\nManagement" as physical_mgmt
+    component "<<component>>\nQualification\nManagement" as qualification_mgmt
+    component "<<component>>\nStorage Area\nManagement" as storage_mgmt
+
+    component "<<component>>\nShipping Agent Org\nManagement" as shiporg_mgmt
+    component "<<component>>\nShipping Agent Rep\nManagement" as shiprep_mgmt
+
+    component "<<component>>\nVessel Type\nManagement" as vtype_mgmt
+    component "<<component>>\nVessel Record\nManagement" as vrecord_mgmt
+    component "<<component>>\nVessel Visit\nNotification Mgmt" as vnotif_mgmt
+
+    component "<<component>>\nUser\nManagement" as user_mgmt
+    component "<<component>>\nAudit Log\nManagement" as audit_mgmt
+
+    ' Ligações internas (exemplo real baseado em dependências)
+    staff_mgmt --> qualification_mgmt
+    shiprep_mgmt --> shiporg_mgmt
+    vrecord_mgmt --> vtype_mgmt
+    vnotif_mgmt --> vrecord_mgmt
+    dock_mgmt --> vnotif_mgmt
+    physical_mgmt --> storage_mgmt
+
+}
+
+' ============================================
+' LIGAÇÕES UI/API AOS COMPONENTES INTERNOS
+' ============================================
+ui_staff --> staff_mgmt
+api_staff --> staff_mgmt
+
+ui_dock --> dock_mgmt
+api_dock --> dock_mgmt
+
+ui_physical --> physical_mgmt
+api_physical --> physical_mgmt
+
+ui_qualification --> qualification_mgmt
+api_qualification --> qualification_mgmt
+
+ui_storage --> storage_mgmt
+api_storage --> storage_mgmt
+
+ui_shiporg --> shiporg_mgmt
+api_shiporg --> shiporg_mgmt
+
+ui_shiprep --> shiprep_mgmt
+api_shiprep --> shiprep_mgmt
+
+ui_vtype --> vtype_mgmt
+api_vtype --> vtype_mgmt
+
+ui_vrecord --> vrecord_mgmt
+api_vrecord --> vrecord_mgmt
+
+ui_vnotif --> vnotif_mgmt
+api_vnotif --> vnotif_mgmt
+
+@enduml

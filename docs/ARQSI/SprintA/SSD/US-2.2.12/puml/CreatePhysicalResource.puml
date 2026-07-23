@@ -1,0 +1,71 @@
+@startuml L5-CreatePhysicalResource
+title Create Physical Resource - Process View
+
+actor "Logistics Operator" as LO
+participant ":SPA" as SPA
+participant ":PhysicalResourceController" as CTRL
+participant ":PhysicalResourceService" as SVC
+participant ":PhysicalResourceRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Create Physical Resource
+  LO -> SPA : fillForm(code, description,\nkind, capacity,\nassignedArea?, setupTime?,\nqualificationRequirements)
+  activate SPA
+
+  SPA -> CTRL : POST /api/physicalresources\n{CreatePhysicalResourceDto}
+  activate CTRL
+
+  CTRL -> SVC : AddAsync(dto)
+  activate SVC
+
+  ' Unique code validation
+  SVC -> REPO : ExistsByCodeAsync(dto.code)
+  activate REPO
+  REPO -> DB : SELECT COUNT(*) FROM PhysicalResources WHERE Code=?
+  activate DB
+  DB --> REPO : 0
+  deactivate DB
+  REPO --> SVC : false
+  deactivate REPO
+
+  ' Capacity must be > 0
+  SVC -> SVC : Validate(capacity > 0)
+
+  alt invalid capacity
+    SVC --> CTRL : 400 Bad Request
+    CTRL --> SPA : show form validation errors
+    SPA --> LO : correct input
+  else valid
+    ' Create entity with qualificationRequirements text
+    SVC -> SVC : new PhysicalResource(dto)
+
+    SVC -> REPO : AddAsync(entity)
+    activate REPO
+    REPO -> DB : INSERT INTO PhysicalResources ...
+    activate DB
+    DB --> REPO : inserted(Id)
+    deactivate DB
+    REPO --> SVC : entity
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : SaveChanges()
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ToDto(entity)
+    SVC --> CTRL : PhysicalResourceDto
+    deactivate SVC
+
+    CTRL --> SPA : 201 Created + PhysicalResourceDto
+    deactivate CTRL
+
+    SPA --> LO : success message
+    deactivate SPA
+  end
+end
+@enduml

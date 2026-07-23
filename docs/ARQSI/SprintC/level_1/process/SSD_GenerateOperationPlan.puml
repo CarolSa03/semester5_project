@@ -1,0 +1,31 @@
+@startuml
+title System Sequence Diagram - Generate Operation Plan
+
+autonumber
+
+actor "Logistics Operator" as LO
+participant "System" as SYS
+
+activate LO
+
+LO -> SYS : Asks to generate Operation Plans for a specific date
+activate SYS
+SYS --> LO : Requests the date and algorithm selection (Genetic, Heuristic, etc.)
+deactivate SYS
+
+LO -> SYS : Selects date and algorithm
+activate SYS
+SYS -> SYS : Validates input
+SYS -> SYS : Helper: Determine efficient algorithm if "Auto" selected
+SYS -> SYS : Executes scheduling algorithm (MasterData/Prolog)
+SYS --> LO : Displays the generated Operation Plan (for review)
+deactivate SYS
+
+LO -> SYS : Confirms and saves the Operation Plan
+activate SYS
+SYS -> SYS : Persists Operation Plan (OEM Module)
+SYS --> LO : Confirms success and displays summary
+deactivate SYS
+
+deactivate LO
+@enduml

@@ -1,0 +1,92 @@
+@startuml L5-UpdateQualification
+
+title Update Qualification - Process View
+
+actor "Logistics Operator" as ADMIN
+participant "EditQualification.html\n(SPA)" as SPA
+participant ":QualificationController" as CTRL
+participant ":QualificationService" as SVC
+participant ":QualificationRepository" as REPO
+participant ":PortManagementDB" as DB
+
+' ========================= USER ACTION =========================
+group Edit and Submit Form
+    ADMIN -> SPA : editForm(DescriptiveName)
+    note right of ADMIN
+        Administrator updates the qualification name,\ne.g., from "Crane Operator" → "Certified Crane Operator".
+    end note
+end
+
+' ========================= REQUEST FLOW =========================
+group Submit Update Request
+    SPA -> CTRL : PATCH /api/Qualification/{code}\n{ DescriptiveName }
+    activate CTRL
+
+    CTRL -> SVC : UpdateQualificationAsync(code, dto)
+    activate SVC
+end
+
+' ========================= VALIDATION PHASE =========================
+group Validate Existence
+    SVC -> REPO : GetByIdAsync(code)
+    activate REPO
+    REPO -> DB : SELECT * FROM Qualifications WHERE Code = ?
+    activate DB
+    DB --> REPO : Qualification or null
+    deactivate DB
+    REPO --> SVC : Qualification or null
+    deactivate REPO
+
+    alt Qualification not found
+        SVC --> CTRL : return null
+        CTRL --> SPA : 404 Not Found
+        SPA --> ADMIN : showError("Qualification not found")
+        deactivate CTRL
+
+    end alt
+end
+
+' ========================= UPDATE PHASE =========================
+group Update Qualification
+    note right of SVC
+        Updates DescriptiveName and saves changes\nwhile maintaining the same Code.
+    end note
+
+    SVC -> DB : UPDATE Qualifications SET DescriptiveName = ? WHERE Code = ?
+    activate DB
+    DB --> SVC : success
+    deactivate DB
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : COMMIT TRANSACTION
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC --> CTRL : QualificationDto { Code, DescriptiveName }
+    deactivate SVC
+end
+
+' ========================= RESPONSE =========================
+group Return Result
+    CTRL --> SPA : 200 OK + QualificationDto
+    deactivate CTRL
+
+    SPA --> ADMIN : showSuccess("Qualification updated successfully!")
+end
+
+' ========================= ERROR HANDLING =========================
+alt Validation Error
+    CTRL --> SPA : 400 Bad Request
+    SPA --> ADMIN : showError("Missing or invalid fields")
+end
+
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> ADMIN : showError("Failed to update qualification")
+end
+
+@enduml

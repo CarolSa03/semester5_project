@@ -1,0 +1,382 @@
+ @startuml
+title Port Management Domain Model 
+
+skinparam nodesep 50
+skinparam ranksep 60
+
+
+
+top to bottom direction
+
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor DimGray
+  FontSize 12
+}
+
+
+
+
+
+skinparam packageStyle rectangle
+
+
+
+' ============================================================
+' ============ COMMON VALUE OBJECTS (REUSABLE) ===============
+' ============================================================
+  class Email <<(V, #ADD8E6) valueObject>> {
+    +Value : string
+  }
+
+  class PhoneNumber <<(V, #ADD8E6) valueObject>> {
+    +Value : string
+  }
+  
+  class Date <<(V, #ADD8E6) valueObject>> {
+    +Value : string
+  }
+  
+  class CapacityTEU <<(V, #ADD8E6) valueObject>>{
+    +Value : int
+  }
+  
+   class Location <<(V, #ADD8E6) valueObject>> {
+          +Value : string
+          }
+      
+' ============================================================
+
+ package "VesselRecord Aggregate" {
+    class VesselRecord <<AggregateRoot>> {
+        +Owner : string
+        +IsActive : bool
+    }
+
+    class Imo <<(V, #ADD8E6) valueObject>>{
+        +Value : string
+    }
+  
+    class Name <<(V, #ADD8E6) valueObject>> {
+        +Value : string
+    }
+    
+    VesselRecord "1" --> "1" Imo : VesselImo
+    VesselRecord "1" --> "1" Name : VesselName
+    
+  }
+  
+  ' ============================================================
+  ' ============== VESSEL TYPE AGGREGATE =====================
+  ' ============================================================
+
+  package "VesselType Aggregate"{
+     class VesselType <<AggregateRoot>> {
+         +Description : string
+         +MaxRows : int
+         +MaxBays : int
+         +MaxTiers : int
+         +IsActive : boolean
+     }
+    
+     class Name <<(V, #ADD8E6) valueObject>> {
+         +Value : string
+     }
+    
+    VesselType "1" --> "1" Name : VesselTypeName
+    VesselType "1" --> "1" CapacityTEU : MaxCapacityTEU
+    
+  }
+  
+ 
+' ============================================================
+' ============== DOCK AGGREGATE ==============================
+' ============================================================ 
+  package "Dock Aggregate" {
+    class Dock <<AggregateRoot>> {
+        +Length : int
+        +Depth : int
+        +MaxDraft : int
+        +MaxSTS : int
+        +IsActive : bool 
+    }
+  
+    class Name <<(V, #ADD8E6) valueObject>> {
+        +Value : string
+    }
+      
+    Dock "1" --> "1" Name : DockName
+    Dock "1" --> "1" Location : DockLocation 
+  
+  }
+
+
+' ============================================================
+' ===== SHIPPING AGENT ORGANIZATION AGGREGATE ================
+' ============================================================
+  package "ShippingAgentOrganization Aggregate" {
+    class ShippingAgentOrganization <<AggregateRoot>> {
+    }
+  
+    class LegalName  <<(V, #ADD8E6) valueObject>>  {
+        +Value : string
+    }
+  
+    class AlternateName  <<(V, #ADD8E6) valueObject>>{
+        +Value : string
+    }
+  
+    class taxNumber  <<(V, #ADD8E6) valueObject>> {
+        +Value : string
+    }
+    
+    ShippingAgentOrganization "1" --> "1" LegalName : LegalName
+    ShippingAgentOrganization "1" --> "0..1" AlternateName : AlternateName
+    ShippingAgentOrganization "1" --> "1" taxNumber : TaxNumber
+    
+  }
+  
+  package "ShippingAgentRepresentative Aggregate" {
+    class ShippingAgentRepresentative <<AggregateRoot>> {
+        +Nationality : string
+    }
+      
+    class Name  <<(V, #ADD8E6) valueObject>> {
+        +Value : string
+    }
+        
+    ShippingAgentRepresentative "1" --> "1" Name : RepresentativeName
+    ShippingAgentRepresentative "1" --> "1" Email : RepresentativeEmail
+    ShippingAgentRepresentative "1" --> "1" PhoneNumber : RepresentativePhoneNumber
+            
+  }
+
+' ============================================================
+' ================= QUALIFICATION AGGREGATE ==================
+' ============================================================
+ package "Qualification Aggregate" {
+    class Qualification <<AggregateRoot>> {
+ }
+  
+    class Code  <<(V, #ADD8E6) valueObject>> {
+        +Value : string
+    }
+    
+    class DescriptiveName  <<(V, #ADD8E6) valueObject>>{
+        +Value : string
+    }
+    
+    Qualification "1" --> "1" Code : QualificationCode
+    Qualification "1" --> "1" DescriptiveName : DescriptiveName
+ }
+
+' ============================================================
+' ================= STAFF MEMBER AGGREGATE ===================
+' ============================================================
+ package "StaffMember Aggregate" {
+    class StaffMember <<AggregateRoot>> {
+    +IsAvailable : bool
+    +OperationalWindow : string
+  }
+  
+  class Id  <<(V, #ADD8E6) valueObject>> {
+    +Value : int
+  }
+  
+  class ShortName  <<(V, #ADD8E6) valueObject>>{
+    +Value : string
+  }
+    
+  StaffMember "1" --> "1" Id : StaffMemberID
+  StaffMember "1" --> "1" ShortName : ShortName
+  StaffMember "1" --> "1" Email : StaffMemberEmail
+  StaffMember "1" --> "1" PhoneNumber : StaffMemberPhoneNumber
+}
+
+' ============================================================
+' ================= STORAGE AREA AGGREGATE ===================
+' ============================================================
+ package "StorageArea Aggregate" {
+    class StorageArea <<AggregateRoot>> {
+        +Notes : string
+        +DockDistance : Map <Dock, DistanceMeters>
+    }
+  
+    class Id   <<(V, #ADD8E6) valueObject>>{
+        +Value : string
+    }
+ 
+    class DistanceMeters  <<(V, #ADD8E6) valueObject>> {
+        +Value : int
+    }
+
+    enum StorageAreaType <<Enum>> {
+        Yard
+        Warehouse
+        Other
+    }
+  
+    StorageArea "1" --> "1" Id : StorageAreaID
+    StorageArea "1" --> "1" Location : StorageAreaLocation
+    StorageArea "1" --> "1" StorageAreaType : TypeOfStorageArea
+    StorageArea "1" --> "1..*" DistanceMeters : DistancesToDocks
+    StorageArea "1" --> "1" CapacityTEU : StorageAreaMaxCapacity
+    StorageArea "1" --> "1" CapacityTEU : StorageAreaCurrentCapacity
+}
+
+' ========================================================
+' ======== VESSEL VISIT NOTIFICATION AGGREGATE ===============
+' ============================================================
+ package "VesselVisitNotification Aggregate" {
+    class VesselVisitNotification <<AggregateRoot>> {
+        +DockAssignment : string
+        +ApprovedBy : string
+        +RejectedBy : string
+        +ApprovalNotes : string
+        +RejectionReason  : string 
+    }
+  
+
+    class CargoManifest  <<Entity>> {
+        +Id : int
+    }
+
+    class ContainerInfo  <<Entity>> {
+        +CargoType : string
+    }
+
+    class CrewInfo <<Entity>> {
+        +CaptainName : string
+        +CrewCount : int
+    }
+
+    class CrewMember <<Entity>> {
+        +Name : string
+        +CitizenId : string
+        +Nationality : string
+    }
+
+
+    class ContainerId  <<(V, #ADD8E6) valueObject>> {
+        +Value : string
+    }
+
+    enum VesselVisitStatus <<Enum>> {
+        InProgress
+        PendingApproval
+        Approved
+        Rejected
+        Withdrawn
+    }
+
+    enum ManifestType <<Enum>>{
+        Loading
+        Unloading
+    }
+  
+    class CargoType  <<(V, #ADD8E6) valueObject>>{
+        +Value : string
+    }
+  
+    class Bay  <<(V, #ADD8E6) valueObject>>{
+        +Value : int
+    }
+    
+    class Row  <<(V, #ADD8E6) valueObject>>{
+        +Value : int
+    }
+    
+    class Tier <<(V, #ADD8E6) valueObject>> {
+        +Value : int
+    }
+    
+
+    VesselVisitNotification "1" --> "1" Date : ETA
+    VesselVisitNotification "1" --> "1" Date : ETD
+    VesselVisitNotification "1" --> "1..*" CargoManifest : CargoManifests
+    VesselVisitNotification "1" --> "1" CrewInfo : VesselCrewInfo
+    VesselVisitNotification "1" --> "1" VesselVisitStatus : CurrentStatus
+    VesselVisitNotification "1" --> "1" Date : ApprovalDate
+    VesselVisitNotification "1" --> "1" Date : RejectionDate
+                        
+                        
+    CrewInfo "1" --> "1..*" CrewMember : SafetyCrewMembers
+    CargoManifest "1" --> "1..*" ContainerInfo : Containers
+    CargoManifest "1" --> "1" ManifestType : TypeOfManifest
+    ContainerInfo "1" --> "1" ContainerId : ContainerIdentifier
+    ContainerInfo "1" --> "1" CargoType : TypeOfCargo
+    ContainerInfo "1" --> "1" Bay : ContainerBay
+    ContainerInfo "1" --> "1" Row : ContainerRow
+    ContainerInfo "1" --> "1" Tier : ContainerTier
+                        
+ }
+
+' ============================================================
+' ============== PHYSICAL RESOURCE AGGREGATE =================
+' ============================================================
+ package "PhysicalResource Aggregate" {
+    abstract class PhysicalResource <<AggregateRoot>>{
+        +Description : string
+        +Area : string
+    }
+  
+    class STSCrane extends PhysicalResource {
+    }
+  
+    class YardCrane extends PhysicalResource {
+    }
+  
+    class Truck extends PhysicalResource {
+    }
+    
+    
+  
+    enum PRStatus <<Enum>> {
+        Active 
+        Inactive 
+        Maintenance
+    }
+  
+    class PRCapacity  <<(V, #ADD8E6) valueObject>> extends ValueUnit {
+    }
+    
+    class PRCode  <<(V, #ADD8E6) valueObject>>{
+        +Value : string
+    }
+    class PRSpeed  <<(V, #ADD8E6) valueObject>> extends ValueUnit {
+    }
+    
+    abstract class ValueUnit {
+        +Value : string
+        +Unit : string
+    }
+    
+    PhysicalResource "1" --> "1" PRCode : PhysicalResourceCode
+    PhysicalResource "1" --> "1" PRStatus : PhysicalResourceStatus
+    
+    STSCrane "1" --> "1" PRCapacity : STSCraneCapacity
+    Truck "1" --> "1" PRSpeed : TruckSpeed
+    Truck "1" --> "1" PRCapacity : TruckCapacity
+    YardCrane "1" --> "1" PRCapacity : YardCraneCapacity
+
+
+}
+
+' ============================================================
+' ============== CROSS-AGGREGATE RELATIONSHIPS ===============
+' ============================================================
+
+StaffMember "1" --> "1..*" Qualification : StaffMemberQualifications
+PhysicalResource "1" --> "1..*" Qualification : QualificationsNeeded
+VesselRecord "1" --> "1" VesselType : TypeOfVessel
+Dock "1" --> "0..*" VesselType : AllowedVesselTypes
+Dock "1" --> "0..*" STSCrane : AvailableSTSCranes
+StorageArea "1" --> "1..*" Dock : ServedDocks
+VesselVisitNotification "1" --> "1" VesselRecord : VisitingVessel
+VesselVisitNotification "1" --> "1" ShippingAgentRepresentative : NotifyingRepresentative
+ShippingAgentOrganization "1" --> "1..*" ShippingAgentRepresentative : Representatives
+
+@enduml
+
+

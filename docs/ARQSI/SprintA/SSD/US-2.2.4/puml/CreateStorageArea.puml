@@ -1,0 +1,91 @@
+@startuml L5-CreateStorageArea
+title Create Storage Area - Process View
+
+actor "Port Authority Officer" as PAO
+participant ":SPA" as SPA
+participant ":StorageAreaController" as CTRL
+participant ":StorageAreaService" as SVC
+participant ":DockService" as DOCK_SVC
+participant ":StorageAreaRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Create Storage Area
+  PAO -> SPA : fillForm(identifier, type, location,\nmaxCapacity, currentOccupancy,\ndocksServed[], distances[])
+  activate SPA
+
+  SPA -> CTRL : POST /api/storageareas\n{CreateStorageAreaDto}
+  activate CTRL
+
+  CTRL -> SVC : AddAsync(dto)
+  activate SVC
+
+  ' Validation: Unique identifier
+  SVC -> REPO : ExistsByIdentifierAsync(dto.identifier)
+  activate REPO
+  REPO -> DB : SELECT COUNT(*) FROM StorageAreas WHERE Identifier=?
+  activate DB
+  DB --> REPO : 0
+  deactivate DB
+  REPO --> SVC : false
+  deactivate REPO
+
+  ' Occupancy <= Capacity
+  SVC -> SVC : Validate(currentOcc <= maxCapacity)
+
+  alt invalid capacity
+    SVC --> CTRL : 400 Bad Request
+    CTRL --> SPA : show validation error
+    SPA --> PAO : correct fields
+  else valid
+    ' Validate referenced docks exist
+    SVC -> DOCK_SVC : ValidateDockIds(dto.docksServed)
+    activate DOCK_SVC
+    DOCK_SVC -> DB : SELECT Docks WHERE Id IN (list)
+    activate DB
+    DB --> DOCK_SVC : dockIds found
+    deactivate DB
+    alt missing dock
+      DOCK_SVC --> SVC : error
+      SVC --> CTRL : 400 Bad Request "Invalid dock"
+      CTRL --> SPA : show error
+      SPA --> PAO : correct docks
+    else all docks valid
+      DOCK_SVC --> SVC : valid
+      deactivate DOCK_SVC
+
+      ' Create entity
+      SVC -> SVC : new StorageArea(dto)
+
+      ' Insert
+      SVC -> REPO : AddAsync(entity)
+      activate REPO
+      REPO -> DB : INSERT INTO StorageAreas ...
+      activate DB
+      DB --> REPO : inserted(Id)
+      deactivate DB
+      REPO --> SVC : entity
+      deactivate REPO
+
+      ' SaveChanges
+      SVC -> REPO : SaveChangesAsync()
+      activate REPO
+      REPO -> DB : SaveChanges()
+      activate DB
+      DB --> REPO : success
+      deactivate DB
+      REPO --> SVC : success
+      deactivate REPO
+
+      SVC -> SVC : ToDto(entity)
+      SVC --> CTRL : StorageAreaDto
+      deactivate SVC
+
+      CTRL --> SPA : 201 Created + StorageAreaDto
+      deactivate CTRL
+
+      SPA --> PAO : success notice
+      deactivate SPA
+    end
+  end
+end
+@enduml

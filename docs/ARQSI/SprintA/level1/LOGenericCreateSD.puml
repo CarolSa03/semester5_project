@@ -1,0 +1,21 @@
+@startuml
+title Level 1 Sequence Diagram (SD) - REGISTER/ADD User Story
+autonumber
+
+actor ":Logistics Operator" as LO
+participant ":Port Management" as System
+
+LO -> System: Asks to create a new resource
+activate System
+
+
+    System -->> LO : asks to insert the necessary data
+    
+    LO -> System : inserted data
+
+    System -->> LO: resource created / Error in data
+
+
+deactivate System
+
+@enduml

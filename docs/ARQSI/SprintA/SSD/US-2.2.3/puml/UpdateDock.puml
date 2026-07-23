@@ -1,0 +1,139 @@
+@startuml L5-UpdateDock
+
+title Update Dock - Process View
+
+actor "Port Authority Officer" as ADMIN
+participant "EditDock.html\n(SPA)" as SPA
+participant ":DockController" as CTRL
+participant ":DockService" as SVC
+participant ":DockRepository" as DREPO
+participant ":VesselTypeRepository" as VREPO
+participant ":PortManagementDB" as DB
+
+' =============== USER INTERACTION ===============
+group Fill & Submit Edit Form
+    ADMIN -> SPA : editForm(id, name, location, length, depth,\nmaxDraft, maxSTS, allowedVesselTypes[], isActive)
+    note right of ADMIN
+        Administrator edits dock details\nand clicks "Save Changes"
+    end note
+end
+
+' =============== REQUEST FLOW ===============
+group Submit Request
+    SPA -> CTRL : PATCH /api/Dock/{id}\n{DockDto}
+    activate CTRL
+
+    CTRL -> SVC : UpdateAsync(id, DockDto)
+    activate SVC
+end
+
+' =============== RETRIEVE EXISTING ENTITY ===============
+group Retrieve Dock
+    SVC -> DREPO : GetByIdAsync(id)
+    activate DREPO
+    DREPO -> DB : SELECT * FROM Docks WHERE Id = ?
+    activate DB
+    DB --> DREPO : Dock or null
+    deactivate DB
+    DREPO --> SVC : Dock or null
+    deactivate DREPO
+
+    alt Dock not found
+        SVC --> CTRL : null
+        CTRL --> SPA : 404 Not Found
+        SPA --> ADMIN : "Dock not found"
+        deactivate CTRL
+
+    end alt
+end
+
+' =============== VALIDATION & BUSINESS RULES ===============
+group Validate Input and Business Rules
+    note right of SVC
+        Checks for duplicate dock name,\nvalidates numeric values, and ensures\nMaxDraft ≤ Depth
+    end note
+
+    alt Dock name changed
+        SVC -> DREPO : GetByNameAsync(dto.Name)
+        activate DREPO
+        DREPO -> DB : SELECT * FROM Docks WHERE Name = ?
+        activate DB
+        DB --> DREPO : Dock or null
+        deactivate DB
+        DREPO --> SVC : Dock or null
+        deactivate DREPO
+
+        alt Duplicate name found
+            SVC --> CTRL : throws BusinessRuleViolationException
+            CTRL --> SPA : 400 Bad Request + "Dock with name already exists"
+            SPA --> ADMIN : showError("Duplicate dock name")
+            deactivate CTRL
+
+        end alt
+    end alt
+
+    alt AllowedVesselTypes changed
+        SVC -> VREPO : GetByIdsAsync(vesselTypeIds)
+        activate VREPO
+        VREPO -> DB : SELECT * FROM VesselTypes WHERE Id IN (ids)
+        activate DB
+        DB --> VREPO : List<VesselType>
+        deactivate DB
+        VREPO --> SVC : List<VesselType>
+        deactivate VREPO
+
+        alt Some vessel types not found
+            SVC --> CTRL : throws DomainValidationException("Vessel types not found")
+            CTRL --> SPA : 400 Bad Request + error
+            SPA --> ADMIN : showError("Invalid vessel types")
+            deactivate CTRL
+
+        end alt
+    end alt
+end
+
+' =============== UPDATE PHASE ===============
+group Apply Changes and Save
+    SVC -> SVC : Update dock fields (name, location,\nlength, depth, maxDraft, maxSTS, vesselTypes, isActive)
+    note right of SVC
+        Applies only modified fields\nand sets UpdatedAt = DateTime.UtcNow
+    end note
+
+    SVC -> DREPO : SaveChangesAsync()
+    activate DREPO
+    DREPO -> DB : UPDATE Docks SET ... WHERE Id = ?
+    activate DB
+    DB --> DREPO : success
+    deactivate DB
+    DREPO --> SVC : success
+    deactivate DREPO
+
+    SVC -> SVC : ConvertToDto(dock)
+    deactivate SVC
+    SVC --> CTRL : DockDto (updated)
+end
+
+' =============== RESPONSE PHASE ===============
+group Return Result
+    CTRL --> SPA : 200 OK + DockDto
+    deactivate CTRL
+
+    SPA --> ADMIN : "Dock updated successfully!"
+    note right of SPA
+        Displays success confirmation\nand redirects to dock details page
+    end note
+end
+
+' =============== ERROR HANDLING ===============
+alt Validation failed
+    SVC --> CTRL : throws DomainValidationException
+    CTRL --> SPA : 400 Bad Request + "Validation failed"
+    SPA --> ADMIN : showError("Invalid dock data")
+end
+
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> ADMIN : showError("Failed to update dock")
+end
+
+@enduml

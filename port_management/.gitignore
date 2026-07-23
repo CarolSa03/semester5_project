@@ -1,0 +1,70 @@
+# ======================================
+# PROJECT-LEVEL .gitignore
+# Applies to backend, frontend, and prolog modules
+# ======================================
+
+#####################
+# BACKEND (.NET)
+#####################
+backend/bin/
+backend/obj/
+backend/.vs/
+backend/*.user
+backend/*.suo
+**/bin/
+**/obj/
+
+# Optional IDE integration
+backend/.idea/
+backend/*.DotSettings.user
+
+# Local-only config files
+backend/appsettings.Development.json
+backend/appsettings.Local.json
+
+
+#####################
+# FRONTEND (Vue + Vite)
+#####################
+frontend/node_modules/
+frontend/dist/
+frontend/.cache/
+
+# Logs
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Vite local env files
+frontend/.env.local
+frontend/.env.*.local
+
+
+#####################
+# PROLOG MODULE
+#####################
+# Compiled Prolog bytecode
+prolog/*.qlf
+
+# Prolog temporary folder
+prolog/tmp/
+
+# Prolog logs
+prolog/*.log
+
+
+#####################
+# GENERAL PROJECT BUILD ARTIFACTS
+#####################
+# Any dist/build folders anywhere inside Project/
+**/dist/
+**/build/
+
+# Any node_modules under Project/
+**/node_modules/
+
+# Temporary files
+**/*.tmp
+**/*.cache
+

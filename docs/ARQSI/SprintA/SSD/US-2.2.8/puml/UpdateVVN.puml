@@ -1,0 +1,67 @@
+@startuml L5-UpdateVVN
+title Update VVN - Status maintained "in progress"
+
+actor "Shipping Agent Representative" as SAR
+participant ":SPA" as SPA
+participant ":VesselVisitNotificationsController" as CTRL
+participant ":VesselVisitNotificationService" as SVC
+participant ":VesselVisitNotificationRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Update VVN fields
+  SAR -> SPA : editDraft(vvnId)\n(change cargo/ETA/etc.)
+  activate SPA
+
+  SPA -> CTRL : PATCH /api/vvns/{id}\n{UpdateVVNDto}
+  activate CTRL
+
+  CTRL -> SVC : UpdateAsync(id,dto,repUserId)
+  activate SVC
+
+  ' Load VVN ensuring ownership
+  SVC -> REPO : GetDraftByIdForUserAsync(id,repUserId)
+  activate REPO
+  REPO -> DB : SELECT * FROM VVNs WHERE Id=? AND status="in progress"
+  activate DB
+  DB --> REPO : vvn or null
+  deactivate DB
+  REPO --> SVC : vvn
+  deactivate REPO
+
+  alt not found
+    SVC --> CTRL : 404 Not Found
+    CTRL --> SPA : show error
+    SPA --> SAR : notify
+  else found
+    SVC -> SVC : vvn.UpdateFrom(dto)
+
+    SVC -> REPO : UpdateAsync(vvn)
+    activate REPO
+    REPO -> DB : UPDATE VVNs ...
+    activate DB
+    DB --> REPO : updated
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : SaveChanges()
+    activate DB
+    DB --> REPO : ok
+    deactivate DB
+    REPO --> SVC : ok
+    deactivate REPO
+
+    SVC -> SVC : ToDto(vvn)
+    SVC --> CTRL : VvnDto(status="in progress")
+    deactivate SVC
+
+    CTRL --> SPA : 200 OK + VvnDto
+    deactivate CTRL
+
+    SPA --> SAR : draft updated
+    deactivate SPA
+  end
+end
+@enduml

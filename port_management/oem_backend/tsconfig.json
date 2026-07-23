@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    /* --- Configurações Básicas --- */
+    "target": "es2018",                       /* Versão do JavaScript gerado (Node.js suporta ES2018+) */
+    "module": "commonjs",                     /* Sistema de módulos padrão do Node.js */
+    "lib": ["es6", "dom"],                    /* Bibliotecas a incluir (es6 é essencial) */
+    "allowJs": true,                          /* Permite ficheiros JS misturados (útil se tiveres algum legado) */
+    "outDir": "./dist",                       /* Pasta onde fica o código compilado */
+    "rootDir": "./src",                       /* Pasta onde está o teu código fonte */
+    "removeComments": true,                   /* Remove comentários no código final (reduz tamanho) */
+
+    /* --- Resolução de Módulos --- */
+    "moduleResolution": "node",               /* Essencial para encontrar pacotes npm */
+    "baseUrl": ".",                           /* Base para imports absolutos (opcional) */
+    "esModuleInterop": true,                  /* Permite importar módulos CommonJS como 'import' normal */
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,                /* Permite importar ficheiros .json no código */
+
+    /* --- TypeDI & Decorators (CRÍTICO) --- */
+    "experimentalDecorators": true,           /* Ativa @Service, @Inject, etc. */
+    "emitDecoratorMetadata": true,            /* Permite ao TypeDI ler os tipos para injeção automática */
+
+    /* --- Qualidade do Código (Strict Mode) --- */
+    "strict": true,                           /* Ativa todas as verificações estritas (recomendado) */
+    "noImplicitAny": true,                    /* Erro se não definires um tipo e o TS não conseguir adivinhar */
+    "strictNullChecks": true,                 /* Obriga a verificar se algo é null antes de usar */
+    "strictPropertyInitialization": false,    /* Define como false para facilitar classes de domínio/entidades */
+
+    /* --- Outros --- */
+    "forceConsistentCasingInFileNames": true, /* Impede erros entre Windows/Mac por causa de maiúsculas */
+    "skipLibCheck": true                      /* Salva tempo ignorando verificação de tipos dentro de node_modules */
+  },
+  "include": [
+    "src/**/*"                                /* Compila tudo dentro de src */
+  ],
+  "exclude": [
+    "node_modules",                           /* Ignora a pasta de dependências */
+    "tests/**/*",
+    "**/*.spec.ts"                            /* Ignora testes na compilação final (opcional) */
+  ]
+}

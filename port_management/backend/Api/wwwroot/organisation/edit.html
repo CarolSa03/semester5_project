@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Organization - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        label .required {
+            color: #dc2626;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .field-error {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        input.invalid {
+            border-color: #dc2626;
+        }
+
+        .danger-zone {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .danger-zone h3 {
+            color: #dc2626;
+            margin-bottom: 0.5rem;
+        }
+
+        .danger-zone p {
+            color: #6b7280;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚢 Port Management System - Edit Organization</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div id="loading" class="loading">Loading organization...</div>
+
+            <div id="content" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">Edit Shipping Agent Organization</h2>
+
+                <div id="message-container"></div>
+
+                <form id="edit-form">
+                    <input type="hidden" id="organizationId">
+
+                    <div class="form-group">
+                        <label for="legalName">
+                            Legal Name <span class="required">*</span>
+                        </label>
+                        <input type="text" id="legalName" name="legalName" required
+                            placeholder="Enter official legal name">
+                        <div class="field-error" id="legalName-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="alternativeName">
+                            Alternative Name
+                        </label>
+                        <input type="text" id="alternativeName" name="alternativeName"
+                            placeholder="Enter trade or alternative name">
+                        <div class="field-error" id="alternativeName-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taxNumber">
+                            Tax Number <span class="required">*</span>
+                        </label>
+                        <input type="text" id="taxNumber" name="taxNumber" required
+                            placeholder="Enter tax identification number">
+                        <div class="field-error" id="taxNumber-error"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                            Save Changes
+                        </button>
+                        <a href="list.html" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+
+                <div class="danger-zone">
+                    <h3>Danger Zone</h3>
+                    <p>Once you delete an organization, there is no going back. Please be certain.</p>
+                    <button onclick="deleteOrganization()" class="btn btn-danger">
+                        Delete Organization
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const orgId = urlParams.get('id');
+
+        if (!orgId) {
+            alert('No organization ID provided');
+            window.location.href = 'list.html';
+        }
+
+        async function loadOrganization() {
+            try {
+                const response = await fetch(`${API_BASE}/ShippingAgentOrganization/${orgId}`);
+
+                if (!response.ok) {
+                    throw new Error('Organization not found');
+                }
+
+                const org = await response.json();
+
+                document.getElementById('organizationId').value = org.id;
+                document.getElementById('legalName').value = org.legalName || '';
+                document.getElementById('alternativeName').value = org.alternativeName || '';
+                document.getElementById('taxNumber').value = org.taxNumber || '';
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load organization');
+                window.location.href = 'list.html';
+            }
+        }
+
+        const form = document.getElementById('edit-form');
+        const submitBtn = document.getElementById('submit-btn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearErrors();
+
+            const formData = {
+                legalName: document.getElementById('legalName').value.trim(),
+                alternativeName: document.getElementById('alternativeName').value.trim(),
+                taxNumber: document.getElementById('taxNumber').value.trim()
+            };
+
+            let isValid = true;
+            if (!formData.legalName) {
+                showFieldError('legalName', 'Legal name is required');
+                isValid = false;
+            }
+            if (!formData.taxNumber) {
+                showFieldError('taxNumber', 'Tax number is required');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const response = await fetch(`${API_BASE}/ShippingAgentOrganization/${orgId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to update organization');
+                }
+
+                showSuccess('Organization updated successfully!');
+
+                setTimeout(() => {
+                    window.location.href = `view.html?id=${orgId}`;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message || 'Failed to update organization. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Changes';
+            }
+        });
+
+        async function deleteOrganization() {
+            if (!confirm('Are you sure you want to delete this organization? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/ShippingAgentOrganization/${orgId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete organization');
+                }
+
+                alert('Organization deleted successfully');
+                window.location.href = 'list.html';
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to delete organization');
+            }
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+            document.querySelectorAll('input').forEach(el => el.classList.remove('invalid'));
+            document.getElementById('message-container').innerHTML = '';
+        }
+
+        function showFieldError(fieldName, message) {
+            const errorEl = document.getElementById(`${fieldName}-error`);
+            const inputEl = document.getElementById(fieldName);
+            errorEl.textContent = message;
+            inputEl.classList.add('invalid');
+        }
+
+        function showError(message) {
+            document.getElementById('message-container').innerHTML =
+                `<div class="error">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showSuccess(message) {
+            document.getElementById('message-container').innerHTML =
+                `<div class="success">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        loadOrganization();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,105 @@
+@startuml
+title Use Case Diagram
+
+left to right direction
+
+actor "Port Authority Officer" as PAO
+actor "Shipping Agent Representative" as SAR
+actor "Logistics Operator" as LO
+actor "System Administrator" as SA
+actor "System User" as SU
+
+rectangle "Master Data Management" {
+    usecase "Create/Update Vessel Types" as UC2
+    usecase "Register/Update Vessel Records" as UC3
+    usecase "Register/Update Docks" as UC4
+    usecase "Register/Update Storage Areas" as UC5
+    usecase "Register Shipping Agent Organizations" as UC6
+    usecase "Register/Manage Representatives" as UC7
+    usecase "Register/Manage Staff Members" as UC12
+    usecase "Register/Manage Physical Resources" as UC13
+    usecase "Register/Manage Qualifications" as UC14
+    usecase "Manage Incident Types" as UC40
+    usecase "Manage Complementary Task Categories" as UC41
+}
+
+rectangle "Operational Planning" {
+    usecase "Review & Approve Vessel Visit Notifications" as UC8
+    usecase "Submit Vessel Visit Notification" as UC9
+    usecase "Update In-Progress Vessel Visit Notification" as UC10
+    usecase "View Vessel Visit Notification Status" as UC11
+    usecase "Schedule Vessel Docking & Resources (Genetic/Auto)" as UC28
+    usecase "Rebalance Dock Assignments" as UC42
+}
+
+rectangle "Operations Execution (OEM)" {
+    usecase "Generate/Manage Operation Plans" as UC43
+    usecase "Identify Missing Operation Plans" as UC44
+    usecase "Query Resource Allocation Stats" as UC45
+    usecase "Manage Vessel Visit Executions (VVE)" as UC46
+    usecase "Record/Manage Incidents" as UC47
+    usecase "Record/Manage Complementary Tasks" as UC48
+}
+
+rectangle "3D Visualization & Monitoring" {
+    usecase "Visualize Port 3D (Picking, Spotlight, Info)" as UC26
+    usecase "Visualize Vessels/Resources Status" as UC27
+}
+
+rectangle "System Administration" {
+    usecase "Systematic Deployment & Restricted Access" as UC22
+    usecase "Manage Backups & Recovery" as UC50
+    usecase "Configure Access & Security (SSH, Clustering)" as UC51
+    usecase "Manage Public/Shared Folders" as UC25
+    usecase "Control and Monitor Logins" as UC29
+}
+
+rectangle "GDPR Compliance" {
+    usecase "Manage Privacy Policy" as UC52
+    usecase "View Privacy Policy" as UC53
+    usecase "Manage Personal Data Rights" as UC54
+}
+
+' Relationships
+
+
+PAO --> UC2
+PAO --> UC3
+PAO --> UC4
+PAO --> UC5
+PAO --> UC6
+PAO --> UC7
+PAO --> UC8
+PAO --> UC40
+PAO --> UC41
+PAO --> UC42
+PAO --> UC27
+
+SAR --> UC9
+SAR --> UC10
+SAR --> UC11
+
+LO --> UC12
+LO --> UC13
+LO --> UC14
+LO --> UC28
+LO --> UC43
+LO --> UC44
+LO --> UC45
+LO --> UC46
+LO --> UC47
+LO --> UC48
+LO --> UC27
+
+SU --> UC26
+SU --> UC53
+SU --> UC54
+
+SA --> UC22
+SA --> UC25
+SA --> UC29
+SA --> UC50
+SA --> UC51
+SA --> UC52
+
+@enduml

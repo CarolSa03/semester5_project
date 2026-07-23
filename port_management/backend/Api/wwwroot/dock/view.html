@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Dock - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .detail-header h2 {
+            font-size: 1.5rem;
+            color: #1e3a5f;
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .detail-item {
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .detail-item.full {
+            grid-column: 1 / -1;
+        }
+
+        .detail-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            color: #111827;
+            word-break: break-word;
+        }
+
+        .detail-value.empty {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .badge-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .vessel-types-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .vessel-type-tag {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .metadata {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .metadata .detail-label {
+            font-size: 0.75rem;
+        }
+
+        .metadata .detail-value {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        @media (max-width: 640px) {
+            .detail-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚢 Port Management System - Dock Details</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div id="loading" class="loading">Loading dock details...</div>
+
+            <div id="content" style="display: none;">
+                <div class="detail-header">
+                    <h2 id="dock-name">Dock Name</h2>
+                    <div class="detail-actions">
+                        <a href="list.html" class="btn btn-secondary">← Back</a>
+                        <a href="#" id="edit-btn" class="btn btn-primary">Edit</a>
+                    </div>
+                </div>
+
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Dock Name</div>
+                        <div class="detail-value" id="name"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Location</div>
+                        <div class="detail-value" id="location"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Length</div>
+                        <div class="detail-value" id="length"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Depth</div>
+                        <div class="detail-value" id="depth"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Maximum Draft</div>
+                        <div class="detail-value" id="max-draft"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Max STS Operations</div>
+                        <div class="detail-value" id="max-sts"></div>
+                    </div>
+
+                    <div class="detail-item full">
+                        <div class="detail-label">Allowed Vessel Types</div>
+                        <div class="vessel-types-list" id="vessel-types"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <div id="status"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Dock ID</div>
+                        <div class="detail-value" id="dock-id"></div>
+                    </div>
+                </div>
+
+                <div class="metadata">
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Created</div>
+                            <div class="detail-value" id="created-at"></div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-label">Last Updated</div>
+                            <div class="detail-value" id="updated-at"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const dockId = urlParams.get('id');
+
+        if (!dockId) {
+            alert('No dock ID provided');
+            window.location.href = 'list.html';
+        }
+
+        async function loadDock() {
+            try {
+                const response = await fetch(`${API_BASE}/Dock/${dockId}`);
+                if (!response.ok) throw new Error('Dock not found');
+
+                const dock = await response.json();
+                document.getElementById('dock-name').textContent = dock.name;
+                document.getElementById('name').textContent = dock.name;
+                document.getElementById('location').textContent = dock.location;
+                document.getElementById('length').textContent = `${dock.length} meters`;
+                document.getElementById('depth').textContent = `${dock.depth} meters`;
+                document.getElementById('max-draft').textContent = `${dock.maxDraft} meters`;
+                document.getElementById('max-sts').textContent = dock.maxSTS;
+                document.getElementById('dock-id').textContent = dock.id;
+
+                const vesselTypesContainer = document.getElementById('vessel-types');
+                if (dock.allowedVesselTypes && dock.allowedVesselTypes.length > 0) {
+                    dock.allowedVesselTypes.forEach(vt => {
+                        const tag = document.createElement('span');
+                        tag.className = 'vessel-type-tag';
+                        tag.textContent = vt.name;
+                        vesselTypesContainer.appendChild(tag);
+                    });
+                } else {
+                    vesselTypesContainer.innerHTML = '<span class="detail-value empty">No vessel types assigned</span>';
+                }
+
+                const statusContainer = document.getElementById('status');
+                const badge = document.createElement('span');
+                badge.className = `badge ${dock.isActive ? 'badge-active' : 'badge-inactive'}`;
+                badge.textContent = dock.isActive ? 'Active' : 'Inactive';
+                statusContainer.appendChild(badge);
+
+                document.getElementById('created-at').textContent = formatDate(dock.createdAt);
+
+                const updatedAt = document.getElementById('updated-at');
+                if (dock.updatedAt) {
+                    updatedAt.textContent = formatDate(dock.updatedAt);
+                } else {
+                    updatedAt.textContent = 'Never';
+                    updatedAt.classList.add('empty');
+                }
+
+                document.getElementById('edit-btn').href = `edit.html?id=${dock.id}`;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load dock details');
+                window.location.href = 'list.html';
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-GB', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        loadDock();
+    </script>
+</body>
+
+</html>

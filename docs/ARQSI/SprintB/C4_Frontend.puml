@@ -1,0 +1,111 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Level 3 - Frontend SPA Component Diagram (Vue 3)
+
+Person(User, "System User", "Interacts with the SPA through browser")
+
+'====================================================================
+' FRONTEND SPA (Vue 3 + Vite)
+'====================================================================
+Container_Boundary(FrontendSPA, "Frontend SPA (Vue 3 + Vite)") {
+
+    ' -------------------------------------------------------
+    ' BOOTSTRAPPING
+    ' -------------------------------------------------------
+    Container_Boundary(Bootstrap, "Bootstrap & App Core") {
+        Component(MainTs, "main.ts", "Vue App Bootstrap", "Creates Vue app instance and mounts App.vue")
+        Component(AppVue, "App.vue", "Root Layout", "Defines global layout: header + router-view")
+    }
+
+    ' -------------------------------------------------------
+    ' ROUTER
+    ' -------------------------------------------------------
+    Container_Boundary(RouterContainer, "Router") {
+        Component(RouterIndex, "router.ts", "Vue Router", "Defines all routes + guards based on user roles")
+    }
+
+    ' -------------------------------------------------------
+    ' GLOBAL USER STORE
+    ' -------------------------------------------------------
+    Container_Boundary(UserStoreContainer, "User Session / Auth State") {
+        Component(UserStore, "useUserStore.ts", "Custom Store", "Tracks logged user, roles, authentication")
+    }
+
+    ' -------------------------------------------------------
+    ' VIEWS / PAGES
+    ' -------------------------------------------------------
+    Container_Boundary(Views, "Views (Pages)") {
+
+        Component(LoginView, "Login.vue", "Authentication Page")
+        Component(ActivateView, "Activate.vue", "Account activation")
+
+        Component(DashboardView, "Dashboard.vue", "User dashboard")
+        Component(Port3DView, "PortVisualization.vue", "3D Port View (Three.js)")
+        Component(PrologView, "PrologView.vue", "Prolog console")
+
+        Component(DockViews, "Dock Views", "DockCreate, DockList, DockEdit")
+        Component(StorageViews, "Storage Area Views", "StorageCreate, List, Edit, Detail")
+        Component(ResourceViews, "Physical Resource Views", "Create, List, Edit, Detail")
+        Component(StaffViews, "Staff Views", "Create, List, Edit, Detail")
+        Component(QualificationViews, "Qualification Views", "Create, List, Edit, Detail")
+        Component(OrgViews, "Organization Views", "Create, List, Edit, Detail")
+        Component(RepViews, "Representative Views", "Create, List, Edit, Detail")
+        Component(VesselTypeViews, "VesselType Views", "Create, List, Edit, Detail")
+        Component(VesselRecordViews, "VesselRecord Views", "Create, List, Edit, Detail")
+        Component(NotificationView, "VesselNotificationCreate.vue", "VVN Creation")
+
+        Component(NotFound, "NotFoundView.vue", "404 fallback")
+    }
+
+    ' -------------------------------------------------------
+    ' API SERVICES
+    ' -------------------------------------------------------
+    Container_Boundary(Services, "API Services (Composables + Services)") {
+
+        Component(ApiClient, "apiClient.ts", "Axios Client", "Configures base URL + headers + credentials")
+
+        Component(DockApi, "useDockApi.ts", "Dock API")
+        Component(OrgApi, "useOrganizationApi.ts", "Organization API")
+        Component(RepApi, "useRepresentativeApi.ts", "Representative API")
+        Component(StaffApi, "useStaffApi.ts", "Staff API")
+        Component(QualificationApi, "useQualificationApi.ts", "Qualification API")
+        Component(ResourceApi, "usePhysicalResourceApi.ts", "Physical Resource API")
+        Component(StorageApi, "useStorageAreaApi.ts", "Storage Area API")
+        Component(VesselTypeApi, "useVesselTypeApi.ts", "Vessel Type API")
+        Component(VesselRecordApi, "useVesselRecordApi.ts", "Vessel Record API")
+        Component(PrologApi, "usePrologApi.ts", "Prolog API")
+        Component(Port3DApi, "port3dApi.ts", "Loads 3D JSON layouts + backend data")
+    }
+
+}
+
+'====================================================================
+' RELATIONSHIPS
+'====================================================================
+
+User --> AppVue : "Interacts with"
+
+MainTs --> AppVue : "Bootstraps"
+MainTs --> RouterIndex : "Registers router"
+
+AppVue --> RouterIndex : "Renders pages via <router-view>"
+AppVue --> UserStore : "Loads user on mount"
+
+RouterIndex --> UserStore : "Guards routes based on roles"
+
+Views --> Services : "Call API via composables"
+
+DockApi --> ApiClient
+OrgApi --> ApiClient
+RepApi --> ApiClient
+StaffApi --> ApiClient
+QualificationApi --> ApiClient
+ResourceApi --> ApiClient
+StorageApi --> ApiClient
+VesselTypeApi --> ApiClient
+VesselRecordApi --> ApiClient
+PrologApi --> ApiClient
+Port3DApi --> ApiClient
+
+@enduml

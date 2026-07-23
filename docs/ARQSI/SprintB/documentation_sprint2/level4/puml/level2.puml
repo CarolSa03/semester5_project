@@ -1,0 +1,46 @@
+@startuml Level2-Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Level 2: Container Diagram - Port Manager System
+
+Person(user, "Port Authority Officer")
+Person(systemAdmin, "System Administrator")
+Person(shippingAgentRep, "Shipping Agent Representative")
+Person(logisticsManager, "Logistics Operator")
+
+
+
+System_Boundary(portManager, "Port Manager System") {
+
+    Container(nginx, "Reverse Proxy & Web Server", "Nginx", "Serves the Vue 3 frontend and proxies requests to the API and Prolog Engine")
+
+    Container(frontend, "Frontend Web Application", "Vue 3, Vite, TypeScript", "Provides all UI screens, authentication pages, CRUD modules and 3D port visualization")
+
+    Container(api, "Web API", "ASP.NET Core 9.0, C# 13", "Provides REST API endpoints for dock and vessel operations")
+
+    Container(prolog, "Prolog Engine", "SWI-Prolog", "Executes logic inference rules via HTTP")
+
+    ContainerDb(postgres, "Application Database", "PostgreSQL 16","Stores users, roles, staff, docks, vessels, storage areas, organizations and resources")
+}
+
+System_Ext(iam, "IAM", "OAuth2/OIDC authentication and authorization")
+
+' === USER → SYSTEM relationships ===
+Rel(user, nginx, "Uses via HTTPS")
+Rel(systemAdmin, nginx, "Uses via HTTPS")
+Rel(shippingAgentRep, nginx, "Uses via HTTPS")
+Rel(logisticsManager, nginx, "Uses via HTTPS")
+
+' === INTERNAL relationships ===
+Rel(nginx, frontend, "Serves SPA static files")
+Rel(nginx, api, "Proxies /api requests")
+Rel(nginx, prolog, "Proxies /prolog requests")
+
+Rel(frontend, api, "Calls REST endpoints", "JSON/HTTP")
+Rel(api, postgres, "Reads/Writes", "SQL via EF Core")
+Rel(api, prolog, "Calls logic queries", "HTTP")
+
+Rel(api, iam, "Validates tokens", "OAuth2/OIDC")
+
+
+@enduml

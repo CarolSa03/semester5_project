@@ -1,0 +1,40 @@
+@startuml L5-SearchRepresentatives
+title Search Shipping Agent Representatives - Process View
+
+actor "Port Authority Officer" as PAO
+participant ":SPA" as SPA
+participant ":ShippingAgentRepresentativesController" as CTRL
+participant ":ShippingAgentRepresentativeService" as SVC
+participant ":ShippingAgentRepresentativeRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Search Representatives
+  PAO -> SPA : search(name?,status?,org?,page,size)
+  activate SPA
+
+  SPA -> CTRL : GET /api/representatives?...queries...
+  activate CTRL
+
+  CTRL -> SVC : SearchAsync(filters,pagination)
+  activate SVC
+
+  SVC -> REPO : SearchAsync(filters,pagination)
+  activate REPO
+  REPO -> DB : SELECT * FROM Representatives WHERE ... LIMIT/OFFSET
+  activate DB
+  DB --> REPO : paged results
+  deactivate DB
+  REPO --> SVC : list
+  deactivate REPO
+
+  SVC -> SVC : MapToDto(list)
+  SVC --> CTRL : Page<RepresentativeDto>
+  deactivate SVC
+
+  CTRL --> SPA : 200 OK + results
+  deactivate CTRL
+
+  SPA --> PAO : display search results
+  deactivate SPA
+end
+@enduml

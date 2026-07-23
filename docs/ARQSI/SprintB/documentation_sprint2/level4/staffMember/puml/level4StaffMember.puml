@@ -1,0 +1,266 @@
+@startuml StaffMember-Level4-Code-FullStack
+!theme plain
+skinparam linetype ortho
+
+title Level 4: Complete Code Diagram - Staff Member Module (Domain to Vue Presentation)
+
+' ==================== FRONTEND (VUE 3) ====================
+
+package "Vue 3 Frontend" {
+
+    ' ===== PRESENTATION LAYER =====
+    package "Presentation Layer (Vue Components)" <<presentation>> #LightBlue {
+
+        class StaffListView <<Component>> {
+            - staffStore: StaffStore
+            + mounted(): void
+            + loadStaff(): void
+            + goToCreate(): void
+            + goToEdit(id: string): void
+            + deleteStaff(id: string): void
+        }
+
+        class StaffCreateView <<Component>> {
+            - staffStore: StaffStore
+            - formState: Reactive<FormData>
+            + submit(): void
+        }
+
+        class StaffEditView <<Component>> {
+            - staffStore: StaffStore
+            - formState: Reactive<FormData>
+            + load(): void
+            + submit(): void
+        }
+
+        class StaffDetailView <<Component>> {
+            - staffStore: StaffStore
+            - staffId: string
+            + load(): void
+        }
+    }
+
+    ' ===== APPLICATION LAYER =====
+    package "Application Layer (Frontend / Pinia)" <<application>> #LightGreen {
+        class StaffStore {
+            - staffApi: useStaffApi
+            - staffList: StaffMemberFE[]
+            - currentStaff: StaffMemberFE | null
+            - loading: boolean
+            - error: string
+            + fetchAll(): Promise<void>
+            + fetchById(id: string): Promise<void>
+            + create(staff: StaffMemberFE): Promise<void>
+            + update(id: string, staff: StaffMemberFE): Promise<void>
+            + delete(id: string): Promise<void>
+        }
+    }
+
+    ' ===== SERVICE LAYER =====
+    package "Service Layer (Frontend API Clients)" <<service>> #Yellow {
+        class useStaffApi <<Service>> {
+            - baseUrl: string = "/api/staff"
+            + listStaff(): Promise<StaffMemberFE[]>
+            + getStaff(id: string): Promise<StaffMemberFE>
+            + createStaff(dto: StaffMemberDtoFE): Promise<StaffMemberFE>
+            + updateStaff(id: string, dto: StaffMemberDtoFE): Promise<void>
+            + deleteStaff(id: string): Promise<void>
+        }
+
+        class httpClient <<Utility>> {
+            + get(url): Promise<any>
+            + post(url, body): Promise<any>
+            + patch(url, body): Promise<any>
+            + delete(url): Promise<any>
+        }
+    }
+
+    ' ===== MODELS =====
+    package "Models (Frontend DTOs)" {
+        class StaffMemberFE {
+            + id: string
+            + name: string
+            + email: string
+            + phone: string
+            + isActive: boolean
+            + qualifications: string[]
+        }
+
+        class StaffMemberDtoFE {
+            + name: string
+            + email: string
+            + phone: string
+            + qualificationIds: string[]
+        }
+    }
+}
+
+
+' ==================== BACKEND (ASP.NET CORE 9) ====================
+
+package "ASP.NET Core Backend" {
+
+    ' ===== WEB / CONTROLLERS =====
+    package "WebApp Layer (Controllers)" <<presentation>> #LightBlue {
+        class StaffController <<Controller>> {
+            - _service: StaffService
+            + GetAll(): Task<ActionResult<IEnumerable<StaffMemberDto>>>
+            + GetById(id: int): Task<ActionResult<StaffMemberDto>>
+            + Create(dto: StaffMemberDto): Task<ActionResult<StaffMemberDto>>
+            + Update(id: int, dto: StaffMemberDto): Task<ActionResult>
+            + Delete(id: int): Task<ActionResult>
+        }
+    }
+
+    ' ===== APPLICATION LAYER =====
+    package "Application Layer (Services)" <<application>> #LightGreen {
+        class StaffService <<Service>> {
+            - _repo: IStaffRepository
+            - _qualificationRepo: IQualificationRepository
+            + GetAllAsync(): Task<IEnumerable<StaffMemberDto>>
+            + GetByIdAsync(id: StaffMemberId): Task<StaffMemberDto>
+            + CreateAsync(dto: StaffMemberDto): Task<StaffMemberDto>
+            + UpdateAsync(id: StaffMemberId, dto: StaffMemberDto): Task
+            + DeleteAsync(id: StaffMemberId): Task
+            - MapToDomain(dto: StaffMemberDto): StaffMember
+            - MapToDto(entity: StaffMember): StaffMemberDto
+        }
+    }
+
+    ' ===== DOMAIN LAYER =====
+    package "Domain Layer" <<domain>> #Yellow {
+
+        class StaffMember <<Entity>> {
+            + Id: StaffMemberId
+            + Name: StaffMemberName
+            + Email: Email
+            + Phone: Phone
+            + IsActive: bool
+            + Qualifications: List<Qualification>
+            --
+        }
+
+        class StaffMemberName <<ValueObject>> {
+            + Value: string
+        }
+        class Email <<ValueObject>> {
+            + Value: string
+        }
+        class Phone <<ValueObject>> {
+            + Value: string
+        }
+
+        class StaffMemberId <<ValueObject>> {
+            + Value: int
+        }
+
+        class Qualification <<Entity>> {
+            + Id: QualificationId
+            + Code: string
+            + Description: string
+        }
+
+        class StaffMemberDto <<DTO>> {
+            + id: string
+            + name: string
+            + email: string
+            + phone: string
+            + qualificationIds: int[]
+        }
+
+        interface IStaffRepository {
+            + GetAllAsync(): Task<List<StaffMember>>
+            + GetByIdAsync(id: StaffMemberId): Task<StaffMember>
+            + AddAsync(staff: StaffMember): Task<StaffMember>
+            + UpdateAsync(staff: StaffMember): Task
+            + DeleteAsync(id: StaffMemberId): Task
+        }
+
+        interface IQualificationRepository {
+            + GetByIdsAsync(ids: int[]): Task<List<Qualification>>
+        }
+    }
+
+    ' ===== INFRASTRUCTURE / PERSISTENCE =====
+    package "Infrastructure Layer (Persistence)" <<infrastructure>> #Orange {
+
+        class StaffRepository <<Repository>> {
+            - _context: DbContext
+            + AddAsync(staff): Task<StaffMember>
+            + GetAllAsync(): Task<List<StaffMember>>
+            + GetByIdAsync(id: StaffMemberId): Task<StaffMember>
+            + UpdateAsync(staff: StaffMember): Task
+            + DeleteAsync(id: StaffMemberId): Task
+        }
+
+        class QualificationRepository <<Repository>> {
+            - _context: DbContext
+            + GetByIdsAsync(ids): Task<List<Qualification>>
+        }
+
+        class DbContext <<EF Core>> {
+            + StaffMembers: DbSet<StaffMember>
+            + Qualifications: DbSet<Qualification>
+            + SaveChangesAsync(): Task<int>
+        }
+    }
+}
+
+
+' ==================== DATABASE ====================
+package "Database" {
+    database "PostgreSQL" {
+        entity StaffMembersTable {
+            + Id: int (PK)
+            + Name: text
+            + Email: text
+            + Phone: text
+            + IsActive: boolean
+        }
+
+        entity StaffQualificationsTable {
+            + StaffId: int (FK)
+            + QualificationId: int (FK)
+        }
+
+        entity QualificationsTable {
+            + Id: int (PK)
+            + Code: text
+            + Description: text
+        }
+    }
+}
+
+' ==================== RELATIONSHIPS ====================
+
+' ===== FRONTEND INTERNAL =====
+StaffListView --> StaffStore : loads list
+StaffCreateView --> StaffStore : submits new staff
+StaffEditView --> StaffStore : updates staff
+StaffDetailView --> StaffStore : loads detail
+
+StaffStore --> useStaffApi : calls
+useStaffApi --> httpClient : uses
+StaffMemberFE *-- StaffMemberDtoFE : mapping
+
+' ===== FE → BE =====
+httpClient --> StaffController : REST POST/GET/PATCH/DELETE
+
+' ===== BACKEND INTERNAL =====
+StaffController --> StaffService : handles
+StaffService --> IStaffRepository : persists
+StaffService --> IQualificationRepository : loads Qualification entities
+StaffService --> StaffMember : domain entity mapping
+StaffService --> StaffMemberDto : mapping
+
+IStaffRepository <|.. StaffRepository
+IQualificationRepository <|.. QualificationRepository
+
+StaffRepository --> DbContext
+QualificationRepository --> DbContext
+
+DbContext --> StaffMembersTable
+DbContext --> QualificationsTable
+StaffMembersTable --> StaffQualificationsTable : FK mapping
+
+@enduml

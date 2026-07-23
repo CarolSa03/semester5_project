@@ -1,0 +1,141 @@
+@startuml L5-CreateStaffMember
+
+title Create Staff Member - Process View
+
+actor "Logistics Operator" as LO
+participant "CreateStaffMember.html\n(SPA)" as SPA
+participant ":StaffMemberController" as CTRL
+participant ":StaffMemberService" as SVC
+participant ":QualificationService" as QSVC
+participant ":StaffMemberRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+' =============== USER INTERACTION ===============
+group Fill & Submit Form
+    LO -> SPA : fillForm(shortName, email, phoneNumber,\nqualifications[], isAvailable)
+    note right of LO
+        Operator fills the form and clicks\n"Create Staff Member"
+    end note
+end
+
+' =============== REQUEST FLOW ===============
+group Submit Request
+    SPA -> CTRL : POST /api/StaffMember\n{ shortName, email, phoneNumber, qualifications[], isAvailable }
+    activate CTRL
+
+    CTRL -> SVC : AddAsync(CreatingStaffMemberDto)
+    activate SVC
+end
+
+' =============== VALIDATION PHASE ===============
+group Validate Input
+    ' Validate name, contact and availability fields
+    SVC -> SVC : ValidateRequiredFields(dto)
+    note right of SVC
+        Ensures short name , email and phoneNumber \nare provided and not empty
+    end note
+
+    ' Check for duplicate short name
+    SVC -> REPO : GetByShortNameAsync(dto.shortName)
+    activate REPO
+    REPO -> DB : SELECT * FROM StaffMembers WHERE ShortName = ?
+    activate DB
+    DB --> REPO : null
+    deactivate DB
+    REPO --> SVC : null
+    deactivate REPO
+
+    ' Check for duplicate contact details
+    SVC -> REPO : ExistsByEmailAsync(dto.Email)
+    activate REPO
+    REPO -> DB : SELECT COUNT(*) FROM StaffMembers WHERE Email = ?
+    activate DB
+    DB --> REPO : 0
+    deactivate DB
+    REPO --> SVC : false
+    deactivate REPO
+
+        ' Check for duplicate contact details
+        SVC -> REPO : ExistsByPhoneNumberAsync(dto.PhoneNumber)
+        activate REPO
+        REPO -> DB : SELECT COUNT(*) FROM StaffMembers WHERE PhoneNumber = ?
+        activate DB
+        DB --> REPO : 0
+        deactivate DB
+        REPO --> SVC : false
+        deactivate REPO
+
+       SVC -> QSVC : GetQualificationIdsByNameAsync(dto.qualifications)
+       note right of SVC
+           Validates that all provided qualification names\nexist in the system and returns their IDs
+       end note
+       activate QSVC
+       QSVC -> DB : SELECT * FROM Qualifications WHERE DescriptiveName IN (names)
+       activate DB
+       DB --> QSVC : List<Qualification>
+       deactivate DB
+       QSVC --> SVC : List<Qualification>
+       deactivate QSVC
+end
+
+' =============== CREATION PHASE ===============
+group Create Staff Member Entity
+    SVC -> SVC : new StaffMember(shortName,\ncontactDetails, qualificationIds, isAvailable)
+    note right of SVC
+        Creates domain entity with validated\nfields and qualification IDs
+    end note
+
+    SVC -> REPO : AddAsync(staffMember)
+    activate REPO
+    REPO -> DB : INSERT INTO StaffMembers(...)
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : COMMIT TRANSACTION
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ConvertToDto(staffMember)
+    SVC --> CTRL : StaffMemberDto
+    deactivate SVC
+end
+
+' =============== RESPONSE PHASE ===============
+group Return Result
+    CTRL --> SPA : 201 Created + StaffMemberDto
+    deactivate CTRL
+
+    SPA --> LO : "Staff member created successfully!"
+    note right of SPA
+        Displays success message\nand redirects to staff detail page
+    end note
+end
+
+' =============== ERROR HANDLING ===============
+alt Invalid input or duplicate found
+    SVC --> CTRL : throws ValidationException
+    CTRL --> SPA : 400 Bad Request + error message
+    SPA --> LO : showError("Validation failed or duplicate entry")
+end
+
+alt Qualification not found
+    QSVC --> SVC : throws Exception("Qualification not found")
+    SVC --> CTRL : 400 Bad Request
+    CTRL --> SPA : error
+    SPA --> LO : "Invalid qualification code"
+end
+
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> LO : showError("Failed to create staff member")
+end
+
+@enduml

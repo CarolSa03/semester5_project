@@ -1,0 +1,66 @@
+@startuml L5-UpdateDeactivatePhysicalResource
+title Update / Deactivate Physical Resource - Process View
+
+actor "Logistics Operator" as LO
+participant ":SPA" as SPA
+participant ":PhysicalResourceController" as CTRL
+participant ":PhysicalResourceService" as SVC
+participant ":PhysicalResourceRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Update / Deactivate
+  LO -> SPA : openEdit(resourceId)\nmodify fields or change status
+  activate SPA
+
+  SPA -> CTRL : PATCH /api/physicalresources/{id}\n{UpdatePhysicalResourceDto}
+  activate CTRL
+
+  CTRL -> SVC : UpdateAsync(id, dto)
+  activate SVC
+
+  SVC -> REPO : GetByIdAsync(id)
+  activate REPO
+  REPO -> DB : SELECT * FROM PhysicalResources WHERE Id=?
+  activate DB
+  DB --> REPO : resource or null
+  deactivate DB
+  REPO --> SVC : entity
+  deactivate REPO
+
+  alt not found
+    SVC --> CTRL : 404 Not Found
+    CTRL --> SPA : show "not found"
+    SPA --> LO : notify user
+  else found
+    SVC -> SVC : entity.UpdateFrom(dto)\n(capacity, status, description,\nqualificationRequirements)
+
+    SVC -> REPO : UpdateAsync(entity)
+    activate REPO
+    REPO -> DB : UPDATE PhysicalResources ...
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : SaveChanges()
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ToDto(entity)
+    SVC --> CTRL : PhysicalResourceDto
+    deactivate SVC
+
+    CTRL --> SPA : 200 OK + PhysicalResourceDto
+    deactivate CTRL
+
+    SPA --> LO : updated successfully
+    deactivate SPA
+  end
+end
+@enduml

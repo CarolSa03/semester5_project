@@ -1,0 +1,295 @@
+openapi: 3.0.0
+info:
+  title: Port Scheduling & Planning API
+  version: 2.0.0
+  description: |
+    REST API for vessel scheduling using three algorithms:
+    
+    **US 3.4.2:** Optimal (Brute-force n≤8, EDT n>8)  
+    **US 3.4.4:** Greedy SPT (Shortest Processing Time)  
+    **US 3.4.5:** Multi-crane optimization  
+  
+  contact:
+    name: LEI-SEM5-PI Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:5001
+    description: Development server
+
+tags:
+  - name: Scheduling
+  - name: Health
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: {type: string, example: "ok"}
+                  module: {type: string, example: "scheduler-backend-iarti"}
+                  algorithms:
+                    type: array
+                    items: {type: string}
+                    example:
+                      - "IARTI_Optimal_BruteForce_EDT"
+                      - "IARTI_Greedy_SPT"
+                      - "IARTI_Greedy_EDT"
+                      - "IARTI_Greedy_MST"
+                      - "IARTI_Greedy_SPT_Improved"
+                      - "IARTI_Multi_Crane_Backtracking"
+  /schedule:
+    post:
+      tags: [Scheduling]
+      summary: Optimal scheduler
+      description: Brute-force (n≤8) or EDT heuristic (n>8)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleRequest'
+            example:
+              requestId: "schedule-001"
+              vessels:
+                - imo: "IMO1234567"
+                  eta: 480
+                  etd: 900
+                  cargo: 200
+              resources:
+                - code: "CRANE-01"
+                  capacity: 30
+                  status: "available"
+              staff:
+                - id: "STAFF-001"
+                  status: "available"
+              storage_areas:
+                - code: "YARD-A"
+                  type: "yard"
+                  capacity: 1000
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleResponse'
+
+  /schedule/greedy:
+    post:
+      tags: [ Scheduling ]
+      summary: Greedy heuristic scheduler
+      description: |
+        Multiple heuristic options available:
+        - **SPT** (default): Shortest Processing Time First - O(n log n)
+        - **EDT**: Early Departure Time - O(n log n)
+        - **MST**: Minimum Slack Time - O(n log n)
+        - **SPT_IMPROVED**: SPT with availability consideration - O(n²)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleRequest'
+            example:
+              requestId: "greedy-spt-001"
+              heuristic: "SPT"  
+              vessels:
+                - imo: "IMO1234567"
+                  eta: 480
+                  etd: 900
+                  cargo: 200
+              resources:
+                - code: "CRANE-01"
+                  capacity: 30
+                  status: "available"
+              staff:
+                - id: "STAFF-001"
+                  status: "available"
+              storage_areas:
+                - code: "YARD-A"
+                  type: "yard"
+                  capacity: 1000
+
+  /schedule/multi-crane:
+    post:
+      tags: [Scheduling]
+      summary: Multi-crane optimizer
+      description: Two-phase with single/multi comparison
+      requestBody:
+        $ref: '#/paths/~1schedule/post/requestBody'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultiCraneResponse'
+
+components:
+  schemas:
+    ScheduleRequest:
+      type: object
+      required: [vessels, resources, staff, storage_areas]
+      properties:
+        requestId:
+          type: string
+          description: Unique identifier for the request
+          example: "schedule-001"
+          
+        heuristic: 
+          type: string
+          enum: [ SPT, SPT_IMPROVED, EDT, MST ]
+          default: SPT
+          description: |
+            Heuristic algorithm to use (only applies to /schedule/greedy endpoint):
+            - **SPT**: Shortest Processing Time First (default)
+            - **SPT_IMPROVED**: SPT with availability consideration
+            - **EDT**: Early Departure Time (same as optimal n>8)
+            - **MST**: Minimum Slack Time
+          example: "SPT"
+        vessels:
+          type: array
+          items:
+            type: object
+            required: [imo]
+            properties:
+              imo: {type: string, pattern: '^IMO\d{7}$'}
+              eta: {type: integer, minimum: 0, maximum: 1439}
+              etd: {type: integer, minimum: 0, maximum: 1439}
+              cargo: {type: integer, minimum: 0}
+              assigned_dock: {type: string}
+        resources:
+          type: array
+          items:
+            type: object
+            required: [code]
+            properties:
+              code: {type: string}
+              capacity: {type: integer, minimum: 1}
+              setup_time: {type: integer}
+              assigned_dock: {type: string}
+              window_start: {type: integer, default: 0}
+              window_end: {type: integer, default: 1440}
+              status: {type: string, enum: [available, unavailable, maintenance]}
+        staff:
+          type: array
+          items:
+            type: object
+            required: [id]
+            properties:
+              id: {type: string}
+              qualifications: {type: array, items: {type: string}}
+              window_start: {type: integer}
+              window_end: {type: integer}
+              status: {type: string, enum: [available, unavailable, on_leave]}
+        storage_areas:
+          type: array
+          items:
+            type: object
+            required: [code]
+            properties:
+              code: {type: string}
+              type: {type: string, enum: [yard, warehouse]}
+              capacity: {type: integer}
+              occupancy: {type: integer}
+              served_docks: {type: array, items: {type: string}}
+
+    ScheduleResponse:
+      type: object
+      properties:
+        requestId: {type: string}
+        success: {type: boolean}
+        schedule:
+          type: array
+          items:
+            type: object
+            properties:
+              vessel: {type: string}
+              start: {type: string}
+              end: {type: string}
+              crane: {type: string, description: "Single crane (optimal/greedy)"}
+              cranes: {type: array, items: {type: string}, description: "Multiple cranes (multi-crane)"}
+              staff: {oneOf: [{type: string}, {type: array, items: {type: string}}]}
+              storage: {type: string}
+              storageType: {type: string}
+              loadingContainers: {type: integer}
+              unloadingContainers: {type: integer}
+              estimatedDuration: {type: number}
+              multiCrane: {type: boolean}
+              cranesUsed: {type: integer}
+        totalDelay: {type: number}
+        warnings: {type: array, items: {type: string}}
+        algorithm:
+          type: string
+          enum:
+            - IARTI_Optimal_BruteForce
+            - IARTI_EDT_Heuristic
+            - IARTI_Greedy_SPT
+            - IARTI_Greedy_SPT_Improved  
+            - IARTI_Greedy_EDT           
+            - IARTI_Greedy_MST           
+          description: |
+            Algorithm used to compute the schedule:
+            - **IARTI_Optimal_BruteForce**: Exhaustive search (n≤8)
+            - **IARTI_EDT_Heuristic**: Early Departure Time (n>8, optimal endpoint)
+            - **IARTI_Greedy_SPT**: Shortest Processing Time (/schedule/greedy)
+            - **IARTI_Greedy_SPT_Improved**: SPT with availability check
+            - **IARTI_Greedy_EDT**: EDT via greedy endpoint
+            - **IARTI_Greedy_MST**: Minimum Slack Time
+
+        heuristicType: 
+          type: string
+          enum: [SPT, SPT_IMPROVED, EDT, MST]
+          description: "Type of heuristic used (only present for /schedule/greedy responses)"
+          example: "SPT"
+        
+        performanceMetrics:
+          type: object
+          properties:
+            computationTimeSeconds: {type: number}
+            problemSize:
+              type: object
+              properties:
+                vessels: {type: integer}
+                resources: {type: integer}
+                staff: {type: integer}
+            complexity: {type: string}
+
+    MultiCraneResponse:
+      type: object
+      properties:
+        requestId: {type: string}
+        singleCraneStrategy:
+          $ref: '#/components/schemas/ScheduleResponse'
+        multiCraneStrategy:
+          type: object
+          properties:
+            success: {type: boolean}
+            schedule: {type: array, items: {type: object}}
+            totalDelay: {type: number}
+            multiCraneUsageIntensity: {type: integer}
+            algorithm: {type: string, example: "IARTI_Multi_Crane_Backtracking"}
+        comparison:
+          type: object
+          properties:
+            delayReduction: {type: number}
+            singleCraneHours: {type: number}
+            multiCraneHours: {type: number}
+            extraCraneHours: {type: number}
+            recommendation:
+              type: string
+              enum: [use_single_crane, use_multi_crane, use_multi_crane_if_resources_allow, problem_too_large_or_insufficient_cranes]
+        performanceMetrics:
+          type: object
+          properties:
+            computationTimeSeconds: {type: number}

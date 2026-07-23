@@ -1,0 +1,40 @@
+@startuml L5-SearchVessels
+title Search/List Vessels - Process View
+
+actor "Port Authority Officer" as PAO
+participant ":SPA" as SPA
+participant ":VesselsController" as CTRL
+participant ":VesselService" as SVC
+participant ":VesselRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Search Vessels
+  PAO -> SPA : filter(imo?,name?,operator?,page,size,sort)
+  activate SPA
+
+  SPA -> CTRL : GET /api/vessels?...query...
+  activate CTRL
+
+  CTRL -> SVC : SearchAsync(filters,pagination)
+  activate SVC
+
+  SVC -> REPO : SearchAsync(filters,pagination)
+  activate REPO
+  REPO -> DB : SELECT * FROM Vessels WHERE ... LIMIT/OFFSET
+  activate DB
+  DB --> REPO : Paged<Vessel>
+  deactivate DB
+  REPO --> SVC : results
+  deactivate REPO
+
+  SVC -> SVC : MapToDto(list)
+  SVC --> CTRL : Page<VesselDto>
+  deactivate SVC
+
+  CTRL --> SPA : 200 OK + page results
+  deactivate CTRL
+
+  SPA --> PAO : display table + filters
+  deactivate SPA
+end
+@enduml

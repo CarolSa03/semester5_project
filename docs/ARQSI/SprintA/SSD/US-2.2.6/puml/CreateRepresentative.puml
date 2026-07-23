@@ -1,0 +1,90 @@
+@startuml L5-CreateRepresentative
+title Create Shipping Agent Representative - Process View
+
+actor "Port Authority Officer" as PAO
+participant ":SPA" as SPA
+participant ":ShippingAgentRepresentativesController" as CTRL
+participant ":ShippingAgentRepresentativeService" as SVC
+participant ":AgentOrganizationService" as ORG_SVC
+participant ":ShippingAgentRepresentativeRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Create Representative
+  PAO -> SPA : fillForm(orgId, name, citizenId,\nnationality, email, phone)
+  activate SPA
+
+  SPA -> CTRL : POST /api/representatives\n{CreateRepresentativeDto}
+  activate CTRL
+
+  CTRL -> SVC : AddAsync(dto)
+  activate SVC
+
+  ' Check organization exists
+  SVC -> ORG_SVC : GetByIdAsync(dto.organizationId)
+  activate ORG_SVC
+  ORG_SVC -> DB : SELECT FROM Organizations WHERE Id=?
+  activate DB
+  DB --> ORG_SVC : org or null
+  deactivate DB
+  alt not found
+    ORG_SVC --> SVC : null
+    SVC --> CTRL : 400 Bad Request\n"Invalid organization"
+    CTRL --> SPA : display error
+    SPA --> PAO : correct input
+    deactivate ORG_SVC
+  else valid
+    ORG_SVC --> SVC : orgDto
+    deactivate ORG_SVC
+
+    ' Unique constraints
+    SVC -> REPO : ExistsByEmailAsync(dto.email)
+    activate REPO
+    REPO -> DB : SELECT COUNT(*) WHERE Email=?
+    activate DB
+    DB --> REPO : 0
+    deactivate DB
+    REPO --> SVC : false
+    deactivate REPO
+
+    SVC -> REPO : ExistsByPhoneAsync(dto.phone)
+    activate REPO
+    REPO -> DB : SELECT COUNT(*) WHERE Phone=?
+    activate DB
+    DB --> REPO : 0
+    deactivate DB
+    REPO --> SVC : false
+    deactivate REPO
+
+    ' Create entity
+    SVC -> SVC : new Representative(dto)
+
+    SVC -> REPO : AddAsync(entity)
+    activate REPO
+    REPO -> DB : INSERT INTO Representatives...
+    activate DB
+    DB --> REPO : inserted(id)
+    deactivate DB
+    REPO --> SVC : entity
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : SaveChanges()
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ToDto(entity)
+    SVC --> CTRL : RepresentativeDto
+    deactivate SVC
+
+    CTRL --> SPA : 201 Created + RepresentativeDto
+    deactivate CTRL
+
+    SPA --> PAO : success
+    deactivate SPA
+  end
+end
+@enduml

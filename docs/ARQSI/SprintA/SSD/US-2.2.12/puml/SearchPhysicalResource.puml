@@ -1,0 +1,40 @@
+@startuml L5-SearchPhysicalResources
+title Search Physical Resources - Process View
+
+actor "Logistics Operator" as LO
+participant ":SPA" as SPA
+participant ":PhysicalResourceController" as CTRL
+participant ":PhysicalResourceService" as SVC
+participant ":PhysicalResourceRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Search Resources
+  LO -> SPA : filter(code?, description?,\n kind?, status?, qualification?\npage, size)
+  activate SPA
+
+  SPA -> CTRL : GET /api/physicalresources?...query...
+  activate CTRL
+
+  CTRL -> SVC : SearchAsync(filters, pagination)
+  activate SVC
+
+  SVC -> REPO : SearchAsync(filters, pagination)
+  activate REPO
+  REPO -> DB : SELECT * FROM PhysicalResources\nWHERE matching filters\nLIMIT ? OFFSET ?
+  activate DB
+  DB --> REPO : paged results
+  deactivate DB
+  REPO --> SVC : list
+  deactivate REPO
+
+  SVC -> SVC : MapToDto(list)
+  SVC --> CTRL : Page<PhysicalResourceDto>
+  deactivate SVC
+
+  CTRL --> SPA : 200 OK + results page
+  deactivate CTRL
+
+  SPA --> LO : display results table
+  deactivate SPA
+end
+@enduml

@@ -1,0 +1,83 @@
+@startuml L5-CreateQualification
+
+title Create Qualification - Process View
+
+actor "Logistics Operator" as ADMIN
+participant "CreateQualification.html\n(SPA)" as SPA
+participant ":QualificationController" as CTRL
+participant ":QualificationService" as SVC
+participant ":QualificationRepository" as REPO
+participant ":PortManagementDB" as DB
+
+' ========================= USER ACTION =========================
+group Fill and Submit Form
+    ADMIN -> SPA : fillForm(DescriptiveName)
+    note right of ADMIN
+        The administrator enters the qualification name,\nfor example "Crane Operator", and clicks "Create Qualification".
+    end note
+end
+
+' ========================= REQUEST FLOW =========================
+group Submit Create Request
+    SPA -> CTRL : POST /api/Qualification\n{ DescriptiveName }
+    activate CTRL
+
+    CTRL -> SVC : AddQualificationAsync(QualificationDto)
+    activate SVC
+end
+
+' ========================= VALIDATION PHASE =========================
+group Validate Input
+    SVC -> SVC : Validate required fields
+    note right of SVC
+        Ensures DescriptiveName is not null or empty.
+    end note
+
+    alt Invalid input
+        SVC --> CTRL : throws ArgumentException("Missing required fields.")
+        CTRL --> SPA : 400 Bad Request
+        SPA --> ADMIN : showError("Descriptive name is required")
+        deactivate CTRL
+
+    end alt
+end
+
+' ========================= CREATION PHASE =========================
+group Create Qualification Entity
+    SVC -> REPO : AddAsync(Qualification)
+    activate REPO
+    REPO -> DB : INSERT INTO Qualifications (DescriptiveName)
+    activate DB
+    DB --> REPO : Qualification with Code (auto-generated)
+    deactivate DB
+    REPO --> SVC : Qualification entity
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : COMMIT TRANSACTION
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC --> CTRL : QualificationDto { Code, DescriptiveName }
+    deactivate SVC
+end
+
+' ========================= RESPONSE =========================
+group Return Result
+    CTRL --> SPA : 201 Created + QualificationDto
+    deactivate CTRL
+
+    SPA --> ADMIN : showSuccess("Qualification created successfully! Code: X")
+end
+
+' ========================= ERROR HANDLING =========================
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> ADMIN : showError("Failed to create qualification")
+end
+
+@enduml

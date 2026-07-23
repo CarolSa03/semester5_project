@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OEM DB Test</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; max-width: 600px; margin: 0 auto; }
+        .box { border: 2px dashed #333; padding: 20px; margin-top: 20px; border-radius: 8px; }
+        button { padding: 8px 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px;}
+        button:hover { background: #0056b3; }
+        input { padding: 8px; width: 60%; margin-right: 10px; }
+        li { margin: 5px 0; background: #f4f4f4; padding: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>Local Database Test</h1>
+    <p>Testing connection to: <strong>http://localhost:3000</strong></p>
+
+    <div class="box">
+        <h3>1. Status Check</h3>
+        <button onclick="checkStatus()">Check API Status</button>
+        <p id="statusResult">Status: Unknown</p>
+    </div>
+
+    <div class="box">
+        <h3>2. Write to DB</h3>
+        <input type="text" id="itemName" placeholder="Enter item name (e.g., 'Test Item 1')">
+        <button onclick="writeToDb()">Save Item</button>
+    </div>
+
+    <div class="box">
+        <h3>3. Read from DB</h3>
+        <button onclick="readFromDb()">Load Items</button>
+        <ul id="itemList"></ul>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        async function checkStatus() {
+            try {
+                const res = await fetch(`${API_URL}/info`);
+                const data = await res.json();
+                document.getElementById('statusResult').innerText = 
+                    `Status: ${data.db_status.toUpperCase()} (Port: ${data.port})`;
+                document.getElementById('statusResult').style.color = 'green';
+            } catch (err) {
+                document.getElementById('statusResult').innerText = 'Error: API not reachable';
+                document.getElementById('statusResult').style.color = 'red';
+                console.error(err);
+            }
+        }
+
+        async function writeToDb() {
+            const name = document.getElementById('itemName').value;
+            if (!name) return alert('Please enter a name');
+
+            try {
+                const res = await fetch(`${API_URL}/items`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('Saved successfully!');
+                    document.getElementById('itemName').value = '';
+                    readFromDb();
+                } else {
+                    alert('Failed to save');
+                }
+            } catch (err) {
+                alert('Error connecting to API');
+                console.error(err);
+            }
+        }
+
+        async function readFromDb() {
+            try {
+                const res = await fetch(`${API_URL}/items`);
+                const items = await res.json();
+                
+                const list = document.getElementById('itemList');
+                list.innerHTML = ''; 
+
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${item.name}</strong> <br><small>${new Date(item.timestamp).toLocaleString()}</small>`;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                alert('Error reading from API');
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>

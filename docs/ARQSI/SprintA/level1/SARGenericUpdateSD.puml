@@ -1,0 +1,24 @@
+@startuml
+title Level 1 Sequence Diagram (SD) - UPDATE User Story
+autonumber
+
+actor ":Shipping Authority Representative" as SAR
+participant ":Port Management" as System
+
+SAR -> System: Asks to update a new resource
+activate System
+
+    System -->> SAR: show available resources
+
+    SAR -> System: selected the resource
+
+    System -->> SAR: asks to insert the necessary data
+    
+    SAR -> System : inserts data
+
+    System -->>SAR : resource updated / Error in data
+
+
+deactivate System
+
+@enduml

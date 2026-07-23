@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: port-postgres
+    environment:
+      POSTGRES_DB: portdb
+      POSTGRES_USER: dbadmin
+      POSTGRES_PASSWORD: password123!
+    networks:
+      - portnet
+    restart: unless-stopped
+
+  prolog:
+    build:
+      context: ./prolog
+      dockerfile: Dockerfile
+    container_name: port-prolog
+    expose:
+      - "5001"
+    networks:
+      - portnet
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:4.4.18
+    container_name: port-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: dbadmin
+      MONGO_INITDB_ROOT_PASSWORD: password123!
+    networks:
+      - portnet
+    restart: unless-stopped
+
+  oem_backend:
+    build:
+      context: ./oem_backend
+      dockerfile: Dockerfile
+    container_name: port-oem-backend
+    expose:
+      - "${OEM_PORT:-3000}"
+    environment:
+      - PORT=${OEM_PORT:-3000}
+      - NODE_ENV=production
+    networks:
+      - portnet
+    restart: unless-stopped
+
+networks:
+  portnet:
+    name: portnet
+    driver: bridge
+

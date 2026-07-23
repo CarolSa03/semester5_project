@@ -1,0 +1,43 @@
+@startuml
+title OEM - Generic Sequence Diagram for LIST Operation
+
+participant ":API Client" as Client
+participant ":XRoutes" as Routes
+participant ":authenticate" as AuthMW
+participant ":XController" as Controller
+participant ":XService" as Service
+database "MongoDB" as MongoDB
+
+Client -> Routes : GET /api/xs (?filters)
+activate Routes
+
+Routes -> AuthMW : authenticate(req, res, next)
+activate AuthMW
+
+AuthMW -> AuthMW : verifyIdToken(token)
+AuthMW -> AuthMW : getUserRole() from MasterData
+AuthMW -> AuthMW : req.user = AuthenticatedUser
+AuthMW -->> Routes : next()
+deactivate AuthMW
+
+Routes -> Controller : getAll(req, res)
+activate Controller
+
+Controller -> Controller : Extract filters from req.query
+Controller -> Service : getAll(filters)
+activate Service
+
+Service -> Service : Build query from filters
+Service -> MongoDB : X.find(query).sort()
+activate MongoDB
+MongoDB -->> Service : documents[]
+deactivate MongoDB
+
+Service -->> Controller : xDocuments[]
+deactivate Service
+
+Controller -->> Client : 200 OK (xDto[])
+deactivate Controller
+deactivate Routes
+
+@enduml

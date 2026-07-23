@@ -1,0 +1,48 @@
+@startuml L5-ViewVVNStatus
+title View Vessel Visit Notification Status - Process View
+
+actor "Shipping Agent Representative" as SAR
+participant ":SPA" as SPA
+participant ":VesselVisitNotificationsController" as CTRL
+participant ":VesselVisitNotificationService" as SVC
+participant ":VesselVisitNotificationRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group View VVN Status
+    SAR -> SPA : viewNotifications(status?, vessel?,\nrepresentative?, timeRange?, page, size)
+    activate SPA
+
+    SPA -> CTRL : GET /api/vvns?status=...&vessel=...&rep=...&page=...&size=...
+    activate CTRL
+
+    CTRL -> SVC : SearchAsync(filters, pagination, repUserId)
+    activate SVC
+
+    note right of SVC
+      The rep may view VVNs:
+      - created by themselves, or
+      - created by any rep of the same organization
+    end note
+
+    SVC -> REPO : SearchWithOrgScopeAsync(filters, pagination, repUserId)
+    activate REPO
+
+    REPO -> DB : SELECT * FROM VVNs\nWHERE OrgId = (SELECT OrgId FROM Users WHERE Id = repUserId)\nAND optional filters: status/vessel/rep/timeRange\nORDER BY CreationDate desc\nLIMIT ? OFFSET ?
+    activate DB
+    DB --> REPO : Paged<VVN>
+    deactivate DB
+
+    REPO --> SVC : result list
+    deactivate REPO
+
+    SVC -> SVC : MapToDto(list)\n(including status and dock if assigned)
+    SVC --> CTRL : Page<VvnStatusDto>
+    deactivate SVC
+
+    CTRL --> SPA : 200 OK + results page
+    deactivate CTRL
+
+    SPA --> SAR : display list with statuses\n(in progress, submitted, approved, rejected)
+    deactivate SPA
+end
+@enduml

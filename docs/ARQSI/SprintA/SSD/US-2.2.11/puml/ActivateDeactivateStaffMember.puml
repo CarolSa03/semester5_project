@@ -1,0 +1,101 @@
+@startuml L5-ActivateDeactivateStaffMember
+
+title Activate / Deactivate Staff Member - Process View
+
+actor "Logistics Operator" as LO
+participant "StaffList.html\n(SPA)" as SPA
+participant ":StaffMemberController" as CTRL
+participant ":StaffMemberService" as SVC
+participant ":StaffMemberRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+' =============== USER INTERACTION ===============
+group Select and Toggle Status
+    LO -> SPA : click "Activate" or "Deactivate" button
+    note right of LO
+        Operator decides to change the availability\nstatus of a staff member in the system
+    end note
+end
+
+' =============== REQUEST FLOW ===============
+group Submit Request
+    alt Deactivate Staff Member
+        SPA -> CTRL : PATCH /api/StaffMember/{id}/inactivate
+        activate CTRL
+
+        CTRL -> SVC : InactivateAsync(id)
+        activate SVC
+    else Activate Staff Member
+        SPA -> CTRL : PATCH /api/StaffMember/{id}/activate
+
+        CTRL -> SVC : ActivateAsync(id)
+        deactivate CTRL
+    end
+end
+
+' =============== VALIDATION PHASE ===============
+group Validate Existence
+    SVC -> REPO : GetByIdAsync(id)
+    activate REPO
+    REPO -> DB : SELECT * FROM StaffMembers WHERE Id = ?
+    activate DB
+    DB --> REPO : StaffMember or null
+    deactivate DB
+    REPO --> SVC : StaffMember or null
+    deactivate REPO
+
+    alt Staff member not found
+        SVC --> CTRL : null
+        CTRL --> SPA : 404 Not Found
+        SPA --> LO : "Staff member not found"
+        deactivate CTRL
+
+    end alt
+end
+
+' =============== STATE UPDATE PHASE ===============
+group Update Active Status
+    note right of SVC
+        Depending on the request:\n- Sets IsActive = false (deactivate)\n- Sets IsActive = true (activate)
+    end note
+
+    SVC -> SVC : staffMember.IsActive = true/false\nstaffMember.UpdatedAt = now()
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : UPDATE StaffMembers SET IsActive = ?, UpdatedAt = NOW() WHERE Id = ?
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ConvertToDto(staffMember)
+    SVC --> CTRL : StaffMemberDto
+    deactivate SVC
+end
+
+' =============== RESPONSE PHASE ===============
+group Return Result
+    CTRL --> SPA : 200 OK + StaffMemberDto
+    deactivate CTRL
+
+    SPA --> LO : "Staff member successfully ${activated/deactivated}!"
+    note right of SPA
+        Displays confirmation message\nand updates staff list or details view
+    end note
+end
+
+' =============== ERROR HANDLING ===============
+alt Staff member already in requested state
+    SVC --> CTRL : throws BusinessRuleViolationException
+    CTRL --> SPA : 400 Bad Request + "Already active/inactive"
+    SPA --> LO : showError("Staff member already in this state")
+end
+
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> LO : showError("Failed to change staff member status")
+end
+
+@enduml

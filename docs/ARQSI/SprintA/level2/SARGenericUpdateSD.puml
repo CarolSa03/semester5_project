@@ -1,0 +1,36 @@
+@startuml
+title Level 2 Sequence Diagram (SD) - UPDATE User Story
+autonumber
+
+actor ":Shiping Agent Representative" as SAR
+participant ":Visualization (UI)" as UI
+participant ":Port Management" as POB
+
+SAR -> UI: asks to update a resource
+activate UI
+
+    UI -> POB: request available resources
+    activate POB
+    POB -->> UI: available resources
+    deactivate POB
+
+    UI -->> SAR: show available resources
+
+    SAR -> UI: selected the resource
+    activate UI
+
+        UI -->> SAR: asks to insert the necessary data
+        
+        SAR -> UI: inserts data
+        
+        UI -> POB: request the update of resource
+        activate POB
+        POB -->> UI: resource updated / error in data
+        deactivate POB
+    
+    UI -->> SAR: resource updated / error in data
+    deactivate UI
+
+deactivate UI
+
+@enduml

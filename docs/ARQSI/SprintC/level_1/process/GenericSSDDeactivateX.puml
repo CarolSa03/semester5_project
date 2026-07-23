@@ -1,0 +1,23 @@
+@startuml name GenericSSDDeactivateX
+title Level 1 Sequence Diagram (SD) - Deactivate Feature
+autonumber
+
+actor ":User" as User
+participant ":System" as System
+
+User -> System: Initiates deactivation (e.g. clicks delete)
+activate System
+
+alt Resource deactivated successfully
+    System -->> User: Shows success
+
+else Resource with {id} does not exist
+    System -->> User: Shows error: Resource not found
+
+else Business rule violation
+    System -->> User: Shows error: Cannot deactivate (e.g., resource is in use)
+end
+
+deactivate System
+
+@enduml

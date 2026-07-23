@@ -1,0 +1,78 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+'-----------------------------------------------------
+' SYSTEM (equivalente ao RobDroneGO no exemplo)
+'-----------------------------------------------------
+Container_Boundary(PMS, "PortManagement System") {
+    Component(CoreSystem,<<System C4>>, "Port Operation System")
+}
+
+'-----------------------------------------------------
+' UI + API COMPONENTS (como na tua imagem)
+'-----------------------------------------------------
+
+Component(UIStaff, "UI Staff", "Vue UI", "Screens for managing staff members")
+Component(APIStaff, "API Staff", "ASP.NET API", "StaffMemberController + Service")
+
+Component(UIDock, "UI Dock", "Vue UI")
+Component(APIDock, "API Dock", "ASP.NET API")
+
+Component(UIPhysical, "UI PhysicalResource", "Vue UI")
+Component(APIPhysical, "API PhysicalResource", "ASP.NET API")
+
+Component(UIQualification, "UI Qualification", "Vue UI")
+Component(APIQualification, "API Qualification", "ASP.NET API")
+
+Component(UIStorage, "UI StorageArea", "Vue UI")
+Component(APIStorage, "API StorageArea", "ASP.NET API")
+
+Component(UIShippingOrg, "UI ShippingAgentOrg", "Vue UI")
+Component(APIShippingOrg, "API ShippingAgentOrg", "ASP.NET API")
+
+Component(UIShippingRep, "UI ShippingAgentRep", "Vue UI")
+Component(APIShippingRep, "API ShippingAgentRep", "ASP.NET API")
+
+Component(UIVesselType, "UI VesselType", "Vue UI")
+Component(APIVesselType, "API VesselType", "ASP.NET API")
+
+Component(UIVesselRecord, "UI VesselRecord", "Vue UI")
+Component(APIVesselRecord, "API VesselRecord", "ASP.NET API")
+
+Component(UIVesselVisitNotif, "UI VesselVisitNotif", "Vue UI")
+Component(APIVesselVisitNotif, "API VesselVisitNotif", "ASP.NET API")
+
+'-----------------------------------------------------
+' CONNECTIONS (cada UI/API aponta para o sistema, como no exemplo)
+'-----------------------------------------------------
+UIStaff --> CoreSystem
+APIStaff --> CoreSystem
+
+UIDock --> CoreSystem
+APIDock --> CoreSystem
+
+UIPhysical --> CoreSystem
+APIPhysical --> CoreSystem
+
+UIQualification --> CoreSystem
+APIQualification --> CoreSystem
+
+UIStorage --> CoreSystem
+APIStorage --> CoreSystem
+
+UIShippingOrg --> CoreSystem
+APIShippingOrg --> CoreSystem
+
+UIShippingRep --> CoreSystem
+APIShippingRep --> CoreSystem
+
+UIVesselType --> CoreSystem
+APIVesselType --> CoreSystem
+
+UIVesselRecord --> CoreSystem
+APIVesselRecord --> CoreSystem
+
+UIVesselVisitNotif --> CoreSystem
+APIVesselVisitNotif --> CoreSystem
+
+@enduml

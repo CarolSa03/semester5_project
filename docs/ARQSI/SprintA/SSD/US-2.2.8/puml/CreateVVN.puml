@@ -1,0 +1,73 @@
+@startuml L5-CreateVVN
+title Create Vessel Visit Notification (VVN) - Initial Creation
+
+actor "Shipping Agent Representative" as SAR
+participant ":SPA" as SPA
+participant ":VesselVisitNotificationsController" as CTRL
+participant ":VesselVisitNotificationService" as SVC
+participant ":VesselService" as VES_SVC
+participant ":VesselVisitNotificationRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Create VVN
+  SAR -> SPA : fillInitialForm(vesselId,\nETA, ETD, cargoManifest?, crewInfo?)
+  activate SPA
+
+  SPA -> CTRL : POST /api/vvns\n{CreateVVNDto}
+  activate CTRL
+
+  CTRL -> SVC : AddAsync(dto, repUserId)
+  activate SVC
+
+  ' Validate vessel reference
+  SVC -> VES_SVC : GetByIdAsync(dto.vesselId)
+  activate VES_SVC
+  VES_SVC -> DB : SELECT FROM Vessels WHERE Id=?
+  activate DB
+  DB --> VES_SVC : vessel or null
+  deactivate DB
+  alt vessel not found
+    VES_SVC --> SVC : null
+    SVC --> CTRL : 400 Bad Request
+    CTRL --> SPA : show error
+    SPA --> SAR : correct input
+    deactivate VES_SVC
+  else vessel ok
+    VES_SVC --> SVC : vesselDto
+    deactivate VES_SVC
+
+    ' Create entity as “in progress”
+    SVC -> SVC : new VVN(dto)\nstatus="in progress"\ncreatedBy=repUserId
+
+    ' Persist VVN
+    SVC -> REPO : AddAsync(vvn)
+    activate REPO
+    REPO -> DB : INSERT INTO VVNs ...
+    activate DB
+    DB --> REPO : inserted(Id)
+    deactivate DB
+    REPO --> SVC : entity
+    deactivate REPO
+
+    ' Save
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : SaveChanges()
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ToDto(entity)
+    SVC --> CTRL : VvnDto (status="in progress")
+    deactivate SVC
+
+    CTRL --> SPA : 201 Created + VvnDto
+    deactivate CTRL
+
+    SPA --> SAR : show draft created
+    deactivate SPA
+  end
+end
+@enduml

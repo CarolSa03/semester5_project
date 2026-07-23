@@ -1,0 +1,115 @@
+@startuml L5-CreateShippingAgentOrganization
+
+title Create Shipping Agent Organization - Process View
+
+actor "Port Authority Officer" as ADMIN
+participant "CreateOrganization.html\n(SPA)" as SPA
+participant ":ShippingAgentOrganizationController" as CTRL
+participant ":ShippingAgentOrganizationService" as SVC
+participant ":ShippingAgentOrganizationRepository" as REPO
+participant ":PortManagementDB" as DB
+
+' =============== USER INTERACTION ===============
+group Fill & Submit Form
+    ADMIN -> SPA : fillForm(legalName, alternativeName, taxNumber)
+    note right of ADMIN
+        Administrator fills organization details\nand clicks "Create Organization"
+    end note
+end
+
+' =============== REQUEST FLOW ===============
+group Submit Request
+    SPA -> CTRL : POST /api/ShippingAgentOrganization\n{ShippingAgentOrganizationDto}
+    activate CTRL
+
+    CTRL -> SVC : CreateAsync(ShippingAgentOrganizationDto)
+    activate SVC
+end
+
+' =============== VALIDATION PHASE ===============
+group Validate Input
+    SVC -> SVC : Validate required fields
+    note right of SVC
+        Ensures LegalName and TaxNumber are provided\nand not empty
+    end note
+
+    ' Check for duplicate tax number
+    SVC -> REPO : GetByTaxNumberAsync(dto.TaxNumber)
+    activate REPO
+    REPO -> DB : SELECT * FROM ShippingAgentOrganizations WHERE TaxNumber = ?
+    activate DB
+    DB --> REPO : null (no duplicates)
+    deactivate DB
+    REPO --> SVC : null
+    deactivate REPO
+
+    alt Duplicate tax number found
+        SVC --> CTRL : throws InvalidOperationException("Organization already exists")
+        CTRL --> SPA : 409 Conflict + "Organization with this tax number already exists"
+        SPA --> ADMIN : showError("Duplicate tax number")
+
+        deactivate CTRL
+
+    end alt
+end
+
+' =============== CREATION PHASE ===============
+group Create Organization Entity
+    SVC -> SVC : new ShippingAgentOrganization(dto)
+    note right of SVC
+        Creates domain entity with:\n• Guid Id\n• CreatedAt = DateTime.UtcNow
+    end note
+
+    SVC -> REPO : AddAsync(organization)
+    activate REPO
+    REPO -> DB : INSERT INTO ShippingAgentOrganizations(...)
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : COMMIT TRANSACTION
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ToDto(organization)
+    SVC --> CTRL : ShippingAgentOrganizationDto
+    deactivate SVC
+end
+
+' =============== RESPONSE PHASE ===============
+group Return Result
+    CTRL --> SPA : 201 Created + ShippingAgentOrganizationDto
+    deactivate CTRL
+
+    SPA --> ADMIN : "Organization created successfully!"
+    note right of SPA
+        Displays success message\nand redirects to organization details page
+    end note
+end
+
+' =============== ERROR HANDLING ===============
+alt Validation failed
+    SVC --> CTRL : throws ArgumentException("Missing fields")
+    CTRL --> SPA : 400 Bad Request + "Validation failed"
+    SPA --> ADMIN : showError("Validation failed: missing required fields")
+end
+
+alt Duplicate tax number
+    SVC --> CTRL : throws InvalidOperationException("Duplicate tax number")
+    CTRL --> SPA : 409 Conflict + "Organization with this tax number already exists"
+    SPA --> ADMIN : showError("Duplicate tax number")
+end
+
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> ADMIN : showError("Failed to create organization")
+end
+
+@enduml

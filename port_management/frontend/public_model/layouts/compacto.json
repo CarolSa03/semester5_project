@@ -1,0 +1,95 @@
+﻿{
+  "name": "Porto Compacto Realista",
+  "description": "3 docas lado esquerdo, 6 gruas STS, 2 armazéns, 2 pátios, 20 contentores",
+  "docks": [
+    {
+      "x": -100,
+      "z": -50,
+      "length": 80,
+      "width": 20,
+      "name": "Dock Norte"
+    },
+    {
+      "x": -100,
+      "z": 0,
+      "length": 80,
+      "width": 22,
+      "name": "Dock Central"
+    },
+    {
+      "x": -100,
+      "z": 60,
+      "length": 80,
+      "width": 20,
+      "name": "Dock Sul"
+    }
+  ],
+  "yards": [
+    {
+      "x": -20,
+      "z": -20,
+      "width": 100,
+      "height": 70,
+      "name": "YD-001"
+    },
+    {
+      "x": -20,
+      "z": 50,
+      "width": 100,
+      "height": 60,
+      "name": "YD-002"
+    }
+  ],
+  "warehouses": [
+    {
+      "x": -20,
+      "z": -20,
+      "name": "WH-001"
+    },
+    {
+      "x": -40,
+      "z": 45,
+      "name": "WH-002"
+    }
+  ],
+  "cranes": [
+    { "x": -120, "z": -60, "dockId": 0 },
+    { "x": -120, "z": -40, "dockId": 0 },
+    { "x": -120, "z": -10, "dockId": 1 },
+    { "x": -120, "z": 10, "dockId": 1 },
+    { "x": -120, "z": 50, "dockId": 2 },
+    { "x": -120, "z": 70, "dockId": 2 },
+    { "x": 10, "z": -40, "dockId": 2 },
+    { "x": 10, "z": 50, "dockId": 2 }
+  ],
+  "containers": [
+    { "x": -50, "z": -52, "y": 0 }, { "x": -50, "z": -45, "y": 0 }, { "x": -50, "z": -38, "y": 0 },
+    { "x": -42, "z": -52, "y": 0 }, { "x": -42, "z": -45, "y": 0 }, { "x": -42, "z": -38, "y": 0 },
+    { "x": -34, "z": -52, "y": 0 }, { "x": -34, "z": -45, "y": 0 }, { "x": -34, "z": -38, "y": 0 },
+    { "x": -26, "z": -52, "y": 0 }, { "x": -26, "z": -45, "y": 0 }, { "x": -26, "z": -38, "y": 0 },
+    { "x": -40, "z": 55, "y": 0 }, { "x": -40, "z": 62, "y": 0 },
+    { "x": -32, "z": 55, "y": 0 }, { "x": -32, "z": 62, "y": 0 },
+    { "x": -24, "z": 55, "y": 0 }, { "x": -24, "z": 62, "y": 0 },
+    { "x": -16, "z": 55, "y": 0 }, { "x": -16, "z": 62, "y": 0 }
+  ],
+  "textures": {
+    "docks": {
+      "normalMap": "/textures/ground/normal_ground.jpg",
+      "roughnessMap": "/textures/ground/rough_ground.jpg",
+      "roughness": 0.8,
+      "metalness": 0.2
+    },
+    "warehouses": {
+      "normalMap": "/textures/warehouses/normal_warehouse.jpg",
+      "roughnessMap": "/textures/warehouses/rough_warehouse.png",
+      "roughness": 0.65,
+      "metalness": 0.7
+    },
+    "yards": {
+      "normalMap": "/textures/yards/normal_concrete.png",
+      "roughnessMap": "/textures/yards/rough_concrete.jpg",
+      "roughness": 0.9,
+      "metalness": 0.1
+    }
+  }
+}

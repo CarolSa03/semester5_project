@@ -1,0 +1,61 @@
+@startuml
+title OEM - Generic Sequence Diagram for CREATE Operation
+
+participant ":API Client" as Client
+participant ":XRoutes" as Routes
+participant ":authenticate" as AuthMW
+participant ":XController" as Controller
+participant ":XService" as Service
+participant ":MasterDataService" as MDService
+participant ":X" as Entity
+database "MongoDB" as MongoDB
+
+Client -> Routes : POST /api/xs (creatingXDto)
+activate Routes
+
+Routes -> AuthMW : authenticate(req, res, next)
+activate AuthMW
+
+AuthMW -> AuthMW : verifyIdToken(token)
+AuthMW -> MDService : getUserById(userId, token)
+activate MDService
+MDService -->> AuthMW : user { role }
+deactivate MDService
+
+AuthMW -> AuthMW : req.user = AuthenticatedUser
+AuthMW -->> Routes : next()
+deactivate AuthMW
+
+Routes -> Controller : create(req, res)
+activate Controller
+
+Controller -> Controller : Extract & validate DTO from req.body
+Controller -> Service : create(dto, createdBy, authToken)
+activate Service
+
+alt If validation of a related MasterData entity Y is needed
+    Service -> MDService : getY(yId, token)
+    activate MDService
+    MDService -->> Service : y
+    deactivate MDService
+    note right of Service : Validates that the related entity exists
+end
+
+Service -> Entity : new X(dto)
+activate Entity
+Entity -->> Service : newX
+deactivate Entity
+
+Service -> MongoDB : newX.save()
+activate MongoDB
+MongoDB -->> Service : savedDocument
+deactivate MongoDB
+
+Service -->> Controller : xDocument
+deactivate Service
+
+Controller -->> Client : 201 Created (xDto)
+deactivate Controller
+deactivate Routes
+
+@enduml

@@ -1,0 +1,30 @@
+@startuml
+skinparam groupInheritance 2
+
+rectangle "Port Operations System" {
+  package "UI Layer" {
+    [Visualization (UI)]
+  }
+  
+  package "API Layer" {
+    [POB API]
+  }
+  
+  package "Core System" {
+    [POB]
+  }
+}
+
+actor "UI Shipping Agent Representative" as representative
+actor "UI Logistics Operator" as logistics
+actor "UI Port Authority Officer" as officer
+
+representative --> [Visualization (UI)]
+logistics --> [Visualization (UI)]
+officer --> [Visualization (UI)]
+
+[Visualization (UI)] --> [POB API]
+[POB API] --> [POB]
+
+
+@enduml

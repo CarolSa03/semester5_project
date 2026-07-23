@@ -1,0 +1,63 @@
+@startuml L5-FilterQualificationById
+
+title Filter Qualification by ID - Process View
+
+actor "Logistics Operator" as ADMIN
+participant "Qualifications.html\n(SPA)" as SPA
+participant ":QualificationController" as CTRL
+participant ":QualificationService" as SVC
+participant ":QualificationRepository" as REPO
+participant ":PortManagementDB" as DB
+
+' ========================= USER ACTION =========================
+group Filter by Code (ID)
+    ADMIN -> SPA : input(code)
+    note right of ADMIN
+        The administrator enters a Qualification Code\n(e.g., 101) and clicks "Filter by ID".
+    end note
+end
+
+' ========================= REQUEST FLOW =========================
+group Send Request to API
+    SPA -> CTRL : GET /api/Qualification/{code}
+    activate CTRL
+
+    CTRL -> SVC : getQualificationByCodeAsync(code)
+    activate SVC
+end
+
+' ========================= QUERY DATABASE =========================
+group Retrieve Qualification from DB
+    SVC -> REPO : GetByIdAsync(code)
+    activate REPO
+    REPO -> DB : SELECT * FROM Qualifications WHERE Code = ?
+    activate DB
+    DB --> REPO : Qualification or null
+    deactivate DB
+    REPO --> SVC : Qualification or null
+    deactivate REPO
+end
+
+' ========================= VALIDATION =========================
+alt Qualification not found
+    SVC --> CTRL : null
+    CTRL --> SPA : 404 Not Found
+    SPA --> ADMIN : showError("No qualification found with code X")
+    deactivate CTRL
+
+else Qualification found
+    SVC --> CTRL : QualificationDto { Code, DescriptiveName }
+    deactivate SVC
+end
+
+' ========================= RESPONSE =========================
+group Display Qualification
+    CTRL --> SPA : 200 OK + QualificationDto
+    deactivate CTRL
+    SPA --> ADMIN : displayQualification([Code, DescriptiveName])
+    note right of SPA
+        SPA updates the table showing only\nthat qualification in the list.
+    end note
+end
+
+@enduml

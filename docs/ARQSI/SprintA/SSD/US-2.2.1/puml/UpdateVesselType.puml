@@ -1,0 +1,119 @@
+@startuml L5-UpdateVesselType
+
+title Update Vessel Type - Process View
+
+actor "Port Authority Officer" as ADMIN
+participant "EditVesselType.html\n(SPA)" as SPA
+participant ":VesselTypeController" as CTRL
+participant ":VesselTypeService" as SVC
+participant ":VesselTypeRepository" as REPO
+participant ":PortManagementDB" as DB
+
+' =============== USER INTERACTION ===============
+group Fill & Submit Edit Form
+    ADMIN -> SPA : editForm(id, name, description,\ncapacityTEU, maxRows, maxBays, maxTiers, isActive)
+    note right of ADMIN
+        Administrator modifies vessel type fields\nand clicks "Save Changes"
+    end note
+end
+
+' =============== REQUEST FLOW ===============
+group Submit Update Request
+    SPA -> CTRL : PATCH /api/VesselType/{id}\n{VesselTypeDto}
+    activate CTRL
+
+    CTRL -> SVC : UpdateAsync(id, VesselTypeDto)
+    activate SVC
+end
+
+' =============== VALIDATION & RETRIEVAL ===============
+group Retrieve and Validate Existing Entity
+    SVC -> REPO : GetByIdAsync(id)
+    activate REPO
+    REPO -> DB : SELECT * FROM VesselTypes WHERE Id = ?
+    activate DB
+    DB --> REPO : VesselType or null
+    deactivate DB
+    REPO --> SVC : VesselType or null
+    deactivate REPO
+
+    alt Vessel type not found
+        SVC --> CTRL : null
+        CTRL --> SPA : 404 Not Found
+        SPA --> ADMIN : "Vessel type not found"
+        deactivate CTRL
+
+    end alt
+end
+
+' =============== BUSINESS VALIDATION ===============
+group Validate Updated Fields
+    note right of SVC
+        Validates provided fields and checks\nfor duplicate name if it was changed
+    end note
+    activate SVC
+    alt Name has changed
+        SVC -> REPO : GetByNameAsync(dto.Name)
+        activate REPO
+        REPO -> DB : SELECT * FROM VesselTypes WHERE Name = ?
+        activate DB
+        DB --> REPO : VesselType or null
+        deactivate DB
+        REPO --> SVC : VesselType or null
+        deactivate REPO
+
+        alt Duplicate name found
+            SVC --> CTRL : throws BusinessRuleViolationException
+            CTRL --> SPA : 400 Bad Request + "Duplicate vessel type name"
+            SPA --> ADMIN : showError("Vessel type already exists")
+            deactivate CTRL
+
+        end alt
+    end alt
+end
+
+' =============== UPDATE PHASE ===============
+group Update Vessel Type Entity
+    SVC -> SVC : Update entity fields\n(name, description, capacityTEU,\nmaxRows, maxBays, maxTiers, isActive)
+    note right of SVC
+        Applies only non-null fields and sets\nUpdatedAt = DateTime.UtcNow
+    end note
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : UPDATE VesselTypes SET ... WHERE Id = ?
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ConvertToDto(vesselType)
+    deactivate SVC
+    SVC --> CTRL : VesselTypeDto (updated)
+end
+
+' =============== RESPONSE PHASE ===============
+group Return Result
+    CTRL --> SPA : 200 OK + VesselTypeDto
+    deactivate CTRL
+
+    SPA --> ADMIN : "Vessel type updated successfully!"
+    note right of SPA
+        Displays success message\nand refreshes vessel type details
+    end note
+end
+
+' =============== ERROR HANDLING ===============
+alt Validation failed
+    SVC --> CTRL : throws DomainValidationException
+    CTRL --> SPA : 400 Bad Request + "Validation failed"
+    SPA --> ADMIN : showError("Invalid vessel type data")
+end
+
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> ADMIN : showError("Failed to update vessel type")
+end
+
+@enduml

@@ -1,0 +1,76 @@
+@startuml Staff-Level3-Component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Level 3: Component Diagram - Create Staff Member
+
+Person(user, "Logistics Operator")
+
+' ============================
+' FRONTEND (VUE 3)
+' ============================
+Container_Boundary(frontend, "Frontend Web Application (Vue 3)") {
+
+    Component(staffCreateView, "StaffCreate View", "Vue Component", "Form UI where the Logistics Operator inserts staff member data")
+
+    Component(staffStore, "Staff Store", "Pinia Store", "Holds state, validation, and actions for staff operations")
+
+    Component(staffApi, "Staff API Service", "TypeScript", "Performs HTTP POST /api/staff to create staff member")
+
+    Component(authStore, "Auth Store", "Pinia Store", "Provides JWT token and role for request authentication")
+
+    Component(router, "Vue Router", "Routing Module", "Redirects user after staff creation and enforces role checks")
+
+    Component(httpClient, "HTTP Client", "Fetch Wrapper", "Adds JWT header to every API call")
+}
+
+' ============================
+' BACKEND (ASP.NET Core 9)
+' ============================
+Container_Boundary(backend, "Backend API (ASP.NET Core 9)") {
+
+    Component(staffController, "StaffController", "API Controller", "Receives POST request to create staff")
+
+    Component(staffService, "StaffService", "Application Service", "Business logic for creating staff and assigning qualifications")
+
+    Component(staffEntity, "StaffMember Entity", "Domain Model", "Represents staff member with validations and rules")
+
+    Component(qualificationEntity, "Qualification Entity", "Domain Model", "Represents staff qualifications")
+
+    Component(staffRepository, "StaffRepository", "Repository", "Persists staff members into the database")
+
+    Component(dbContext, "PortDbContext", "EF Core Context", "Provides access to Staff and Qualification tables")
+}
+
+' ============================
+' DATABASE
+' ============================
+ContainerDb(postgres, "PostgreSQL", "Database", "Stores staff members and their qualifications")
+
+
+' ============================
+' RELATIONSHIPS
+' ============================
+
+' ----- Frontend -----
+Rel(user, staffCreateView, "Fills Staff Form", "Browser")
+
+Rel(staffCreateView, staffStore, "Submits form data")
+Rel(staffStore, staffApi, "Calls createStaff()")
+Rel(staffApi, httpClient, "Uses for JWT injection")
+Rel(authStore, httpClient, "Provides JWT token")
+
+' ----- FE → BE -----
+Rel(httpClient, staffController, "POST /api/staff", "JSON HTTPS")
+
+' ----- Backend Internal -----
+Rel(staffController, staffService, "Calls createStaff()")
+Rel(staffService, staffEntity, "Creates instance")
+Rel(staffService, qualificationEntity, "Validates assigned qualifications")
+Rel(staffService, staffRepository, "Saves staff")
+Rel(staffRepository, dbContext, "Uses EF Core")
+Rel(dbContext, postgres, "Inserts new staff record")
+
+' ----- Router after success -----
+Rel(staffStore, router, "Redirects to StaffList after success")
+
+@enduml

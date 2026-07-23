@@ -1,0 +1,6 @@
+# Ignore test results
+results/*.json
+results/*.txt
+
+# Keep directory structure
+!results/.gitkeep

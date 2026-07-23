@@ -1,0 +1,49 @@
+@startuml
+title System Sequence Diagram - Vessel Visit Execution Workflow
+
+autonumber
+
+actor "Logistics Operator" as LO
+participant "System" as SYS
+
+activate LO
+
+' US 4.1.7 Create VVE
+note right of LO : Vessel Arrival
+LO -> SYS : Registers actual arrival of a vessel (Create VVE from VVN)
+activate SYS
+SYS -> SYS : Creates VVE (Status: InProgress)
+SYS --> LO : Confirms VVE creation
+deactivate SYS
+
+' US 4.1.8 Update Berth
+note right of LO : Berthing
+LO -> SYS : Updates VVE with actual berth time and dock used
+activate SYS
+SYS -> SYS : Validates dock assignment
+SYS -> SYS : Log discrepancy if dock differs from plan
+SYS --> LO : Confirms update
+deactivate SYS
+
+' US 4.1.9 Update Operations
+note right of LO : Cargo Operations
+loop For each operation
+    LO -> SYS : Updates execution of an operation (Start/End/Delay)
+    activate SYS
+    SYS -> SYS : Updates operation status
+    SYS --> LO : Confirms update
+    deactivate SYS
+end
+
+' US 4.1.11 Complete VVE
+note right of LO : Departure
+LO -> SYS : Marks VVE as Completed (provides unberth & departure times)
+activate SYS
+SYS -> SYS : Validates all operations are finished
+SYS -> SYS : Updates VVE Status to Completed
+SYS -> SYS : Locks VVE (Read-Only)
+SYS --> LO : Confirms completion
+deactivate SYS
+
+deactivate LO
+@enduml

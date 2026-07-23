@@ -1,0 +1,24 @@
+@startuml
+title Level 1 Sequence Diagram (SD) - UPDATE User Story
+autonumber
+
+actor ":Port Authotirty Officer" as PAO
+participant ":Port Management" as System
+
+PAO -> System: Asks to update a new resource
+activate System
+
+    System -->> PAO: show available resources
+
+    PAO -> System: selected the resource
+
+    System -->> PAO: asks to insert the necessary data
+    
+    PAO -> System : inserts data
+
+    System -->>PAO : resource updated / Error in data
+
+
+deactivate System
+
+@enduml

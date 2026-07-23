@@ -1,0 +1,287 @@
+@startuml
+title ⚓ Port Management Domain Model — Aggregates + Clean VO Boundaries (with VesselType)
+
+!theme plain
+
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor DarkSlateGray
+}
+
+' ============================================================
+' ============ COMMON VALUE OBJECTS (REUSABLE) ===============
+' ============================================================
+package "Common Value Objects" {
+  class Email {
+    +Value : string
+  }
+
+  class PhoneNumber {
+    +Value : string
+  }
+}
+
+' ============================================================
+' ============== VESSEL RECORD AGGREGATE =====================
+' ============================================================
+package "VesselRecord Aggregate" {
+  class VesselRecord {
+    +Imo : Imo
+    +Name : string
+    +VesselType : VesselType
+    +Owner : string
+    +IsActive : bool
+    +CreatedAt : DateTime
+    +UpdatedAt : DateTime?
+  }
+
+  class Imo {
+    +Value : string
+  }
+
+  class VesselType {
+    +Id : int
+    +Name : string
+    +Description : string
+    +CapacityTEU : int?
+    +MaxRows : int?
+    +MaxBays : int?
+    +MaxTiers : int?
+    +IsActive : bool
+    +CreatedAt : DateTime
+    +UpdatedAt : DateTime?
+  }
+
+  VesselRecord --> Imo : uses >
+  VesselRecord --> VesselType : belongsTo >
+
+}
+
+' ============================================================
+' ============== DOCK AGGREGATE ==============================
+' ============================================================
+package "Dock Aggregate" {
+  class Dock {
+    +Id : int
+    +Name : string
+    +Location : string
+    +Length : int
+    +Depth : int
+    +MaxDraft : int
+    +AllowedVesselTypes : List<VesselType>
+    +MaxSTS : int
+    +STSCranes : List<int>
+    +IsActive : bool
+    +CreatedAt : DateTime
+    +UpdatedAt : DateTime?
+  }
+
+
+  Dock "1" --> "many" VesselType : allows >
+}
+
+' ============================================================
+' ===== SHIPPING AGENT ORGANIZATION AGGREGATE ================
+' ============================================================
+package "ShippingAgentOrganization Aggregate" {
+  class ShippingAgentOrganization {
+    +Id : string
+    +LegalName : string
+  }
+
+  class ShippingAgentRepresentative {
+    +Id : string
+    +Name : string
+    +CitizenId : string
+    +Nationality : string
+    +Email : Email
+    +Phone : PhoneNumber
+  }
+
+  ShippingAgentOrganization "1" --> "many" ShippingAgentRepresentative : has >
+  ShippingAgentRepresentative --> Email : uses >
+  ShippingAgentRepresentative --> PhoneNumber : uses >
+}
+
+' ============================================================
+' ================= QUALIFICATION AGGREGATE ==================
+' ============================================================
+package "Qualification Aggregate" {
+  class Qualification {
+    +Code : int
+    +DescriptiveName : string
+  }
+}
+
+' ============================================================
+' ================= STAFF MEMBER AGGREGATE ===================
+' ============================================================
+package "StaffMember Aggregate" {
+  class StaffMember {
+    +Id : int
+    +ShortName : string
+    +Email : Email
+    +PhoneNumber : PhoneNumber
+    +IsAvailable : bool
+    +OperationalWindow : string
+  }
+
+  StaffMember "many" --> "many" Qualification : requires >
+  StaffMember --> Email : uses >
+  StaffMember --> PhoneNumber : uses >
+}
+
+' ============================================================
+' ================= STORAGE AREA AGGREGATE ===================
+' ============================================================
+package "StorageArea Aggregate" {
+  class StorageArea {
+    +Id : string
+    +Type : StorageAreaType
+    +Location : string
+    +MaxCapacity : CapacityTEU
+    +CurrentOccupancy : OccupancyTEU
+  }
+
+  class DockDistance {
+    +DockId : string
+    +Distance : DistanceMeters
+  }
+
+  class CapacityTEU {
+    +Value : int
+  }
+
+  class OccupancyTEU {
+    +Value : int
+  }
+
+  class DistanceMeters {
+    +Value : int
+  }
+
+  enum StorageAreaType {
+    Yard
+    Warehouse
+    Other
+  }
+
+  StorageArea --> CapacityTEU : uses >
+  StorageArea --> OccupancyTEU : uses >
+  StorageArea "1" --> "many" DockDistance : measures >
+  StorageArea --> StorageAreaType : has >
+  DockDistance --> DistanceMeters : uses >
+}
+
+' ============================================================
+' ======== VESSEL VISIT NOTIFICATION AGGREGATE ===============
+' ============================================================
+package "VesselVisitNotification Aggregate" {
+  class VesselVisitNotification {
+    +BusinessId : BusinessId
+    +Status : VesselVisitStatus
+    +ETA : DateTime
+    +ETD : DateTime
+    +DockAssignment : string
+  }
+
+  class CargoManifest {
+    +Type : ManifestType
+  }
+
+  class ContainerInfo {
+    +ContainerId : ContainerId
+    +CargoType : string
+  }
+
+  class CrewInfo {
+    +CaptainName : string
+    +CrewCount : int
+  }
+
+  class CrewMember {
+    +Name : string
+    +CitizenId : string
+    +Nationality : string
+  }
+
+  class BusinessId {
+    +Value : string
+  }
+
+  class ContainerId {
+    +Value : string
+  }
+
+  enum VesselVisitStatus {
+    InProgress
+    PendingApproval
+    Approved
+    Rejected
+    Withdrawn
+  }
+
+  enum ManifestType {
+    Loading
+    Unloading
+  }
+
+  VesselVisitNotification --> BusinessId : uses >
+  VesselVisitNotification "1" --> "many" CargoManifest : includes >
+  VesselVisitNotification --> VesselVisitStatus : has >
+  CargoManifest "1" --> "many" ContainerInfo : contains >
+  CargoManifest --> ManifestType : has >
+  ContainerInfo --> ContainerId : uses >
+  VesselVisitNotification "1" --> "1" CrewInfo : has >
+  CrewInfo "1" --> "many" CrewMember : includes >
+}
+
+' ============================================================
+' ============== PHYSICAL RESOURCE AGGREGATE =================
+' ============================================================
+package "PhysicalResource Aggregate" {
+  class PhysicalResource {
+    +Code : ResourceCode
+    +Description : string
+    +Kind : ResourceKind
+    +Status : ResourceStatus
+    +OperationalCapacity : int
+    +SetupTimeMinutes : int
+  }
+
+  class ResourceCode {
+    +Value : string
+  }
+
+  enum ResourceKind {
+    FixedCrane
+    MobileCrane
+    Truck
+    Other
+  }
+
+  enum ResourceStatus {
+    Active
+    Inactive
+    UnderMaintenance
+  }
+
+  PhysicalResource --> ResourceCode : uses >
+  PhysicalResource "many" --> "many" Qualification : requires >
+  PhysicalResource --> ResourceKind : has >
+  PhysicalResource --> ResourceStatus : has >
+}
+
+' ============================================================
+' ============== CROSS-AGGREGATE RELATIONSHIPS ===============
+' ============================================================
+VesselVisitNotification --> VesselRecord : references >
+VesselVisitNotification --> VesselType : references >
+VesselVisitNotification --> ShippingAgentRepresentative : createdBy >
+VesselVisitNotification --> StorageArea : mayUse >
+PhysicalResource --> StorageArea : assignedTo >
+StaffMember --> Qualification : uses >
+
+@enduml
+

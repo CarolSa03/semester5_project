@@ -1,0 +1,69 @@
+@startuml L5-UpdateDeactivateRepresentative
+title Update/Deactivate Shipping Agent Representative
+
+actor "Port Authority Officer" as PAO
+participant ":SPA" as SPA
+participant ":ShippingAgentRepresentativesController" as CTRL
+participant ":ShippingAgentRepresentativeService" as SVC
+participant ":ShippingAgentRepresentativeRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Update/Deactivate Representative
+  PAO -> SPA : openEdit(repId)\nmodify fields or change status
+  activate SPA
+
+  SPA -> CTRL : PATCH /api/representatives/{id}\n{UpdateRepresentativeDto}
+  activate CTRL
+
+  CTRL -> SVC : UpdateAsync(id,dto)
+  activate SVC
+
+  ' Load entity
+  SVC -> REPO : GetByIdAsync(id)
+  activate REPO
+  REPO -> DB : SELECT * WHERE Id=?
+  activate DB
+  DB --> REPO : entity or null
+  deactivate DB
+  REPO --> SVC : entity
+  deactivate REPO
+
+  alt not found
+    SVC --> CTRL : 404 Not Found
+    CTRL --> SPA : show error
+    SPA --> PAO : notify
+  else found
+    ' Apply changes
+    SVC -> SVC : entity.UpdateFrom(dto)\n(e.g. deactivate=true)
+
+    ' Save
+    SVC -> REPO : UpdateAsync(entity)
+    activate REPO
+    REPO -> DB : UPDATE Representatives ...
+    activate DB
+    DB --> REPO : updated
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : SaveChanges()
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ToDto(entity)
+    SVC --> CTRL : RepresentativeDto
+    deactivate SVC
+
+    CTRL --> SPA : 200 OK + RepresentativeDto
+    deactivate CTRL
+
+    SPA --> PAO : Updated successfully
+    deactivate SPA
+  end
+end
+@enduml

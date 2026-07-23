@@ -1,0 +1,15 @@
+// Central exports for all types
+// Makes imports cleaner: import { DockDto, VesselDto } from '@/types'
+
+export * from './auth'
+export * from './dock'
+export * from './organization'
+export * from './physicalResources'
+export * from './port'
+export * from './portLayout'
+export * from './qualification'
+export * from './representative'
+export * from './staff'
+export * from './storageArea'
+export * from './vessel'
+export * from './vesselType'

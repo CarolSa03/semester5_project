@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Vessel Visit Notification - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Progress Steps */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            padding: 1rem;
+        }
+
+        .step::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e5e7eb;
+            z-index: -1;
+        }
+
+        .step:first-child::before {
+            left: 50%;
+        }
+
+        .step:last-child::before {
+            right: 50%;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            color: #6b7280;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .step.active .step-number {
+            background: #2563eb;
+            color: white;
+        }
+
+        .step.completed .step-number {
+            background: #10b981;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .step.active .step-label {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        label .required {
+            color: #dc2626;
+        }
+
+        input[type="text"],
+        input[type="datetime-local"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: space-between;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        /* Container List */
+        .container-list {
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 1rem;
+            background: #f9fafb;
+        }
+
+        .container-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .container-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .container-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .container-details {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .add-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚢 Port Management System - New Vessel Visit Notification</h1>
+    </div>
+
+    <div class="container">
+        <!-- Progress Steps -->
+        <div class="progress-steps">
+            <div class="step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">Vessel & Dates</div>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">Cargo Manifests</div>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">Crew Info</div>
+            </div>
+            <div class="step" data-step="4">
+                <div class="step-number">4</div>
+                <div class="step-label">Review & Submit</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div id="message-container"></div>
+
+            <form id="notification-form">
+                <!-- Step 1: Vessel & Dates -->
+                <div class="form-section active" data-section="1">
+                    <div class="section-title">Vessel Information & Schedule</div>
+
+                    <div class="form-group">
+                        <label for="vesselIMO">Vessel (IMO) <span class="required">*</span></label>
+                        <select id="vesselIMO" required>
+                            <option value="">Select a vessel</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="eta">Expected Arrival (ETA) <span class="required">*</span></label>
+                            <input type="datetime-local" id="eta" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="etd">Expected Departure (ETD) <span class="required">*</span></label>
+                            <input type="datetime-local" id="etd" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dockAssignment">Dock Assignment <span class="required">*</span></label>
+                        <select id="dockAssignment" required>
+                            <option value="">Select a dock</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <div></div>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(2)">Next: Cargo →</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Cargo Manifests -->
+                <div class="form-section" data-section="2">
+                    <div class="section-title">Cargo Manifests</div>
+
+                    <h3 style="margin-bottom: 1rem;">Unloading Manifest</h3>
+                    <div class="container-list" id="unloading-list">
+                        <p style="color: #6b7280; text-align: center;">No containers added yet</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small add-btn" style="margin-top: 0.75rem;"
+                        onclick="addContainer('unloading')">
+                        + Add Container
+                    </button>
+
+                    <h3 style="margin: 2rem 0 1rem 0;">Loading Manifest</h3>
+                    <div class="container-list" id="loading-list">
+                        <p style="color: #6b7280; text-align: center;">No containers added yet</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small add-btn" style="margin-top: 0.75rem;"
+                        onclick="addContainer('loading')">
+                        + Add Container
+                    </button>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(1)">← Back</button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(3)">Next: Crew →</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Crew Info -->
+                <div class="form-section" data-section="3">
+                    <div class="section-title">Crew Information</div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="captainName">Captain Name <span class="required">*</span></label>
+                            <input type="text" id="captainName" required placeholder="Enter captain's full name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="crewCount">Total Crew Count <span class="required">*</span></label>
+                            <input type="number" id="crewCount" required min="1" placeholder="e.g., 25">
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem 0;">Safety Officers (Required for Dangerous Cargo)</h3>
+                    <div class="container-list" id="officers-list">
+                        <p style="color: #6b7280; text-align: center;">No safety officers added yet</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small add-btn" style="margin-top: 0.75rem;"
+                        onclick="addSafetyOfficer()">
+                        + Add Safety Officer
+                    </button>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(2)">← Back</button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(4)">Review →</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Review & Submit -->
+                <div class="form-section" data-section="4">
+                    <div class="section-title">Review & Submit</div>
+
+                    <div id="review-content"></div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(3)">← Back</button>
+                        <button type="submit" class="btn btn-success" id="submit-btn">Submit Notification</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+        let currentStep = 1;
+        let unloadingContainers = [];
+        let loadingContainers = [];
+        let safetyOfficers = [];
+
+        // Load initial data
+        async function loadInitialData() {
+            try {
+                const [vesselsRes, docksRes] = await Promise.all([
+                    fetch(`${API_BASE}/VesselRecord`),
+                    fetch(`${API_BASE}/Dock`)
+                ]);
+                const vessels = await vesselsRes.json();
+                const docks = await docksRes.json();
+
+                // Populate vessel dropdown (fix: always ensure value is a primitive)
+                const vesselSelect = document.getElementById('vesselIMO');
+                vessels.forEach(v => {
+                    const imoString = (typeof v.imo === "object" && v.imo !== null && "value" in v.imo) ? v.imo.value : v.imo;
+                    const option = document.createElement('option');
+                    option.value = imoString;
+                    option.textContent = `${v.name} (IMO: ${imoString})`;
+                    vesselSelect.appendChild(option);
+                });
+
+                // Populate dock dropdown
+                const dockSelect = document.getElementById('dockAssignment');
+                docks.forEach(d => {
+                    const option = document.createElement('option');
+                    option.value = d.id;
+                    option.textContent = `${d.name} - ${d.location}`;
+                    dockSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError('Failed to load vessels and docks');
+            }
+        }
+
+        function nextStep(step) {
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active', 'completed'));
+            document.querySelector(`[data-section="${step}"]`).classList.add('active');
+            document.querySelector(`[data-step="${step}"]`).classList.add('active');
+            for (let i = 1; i < step; i++) {
+                document.querySelector(`[data-step="${i}"]`).classList.add('completed');
+            }
+            if (step === 4) generateReview();
+            currentStep = step;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function prevStep(step) {
+            nextStep(step);
+        }
+
+        function addContainer(type) {
+            const containerId = prompt('Container ID:');
+            if (!containerId) return;
+            const cargoType = prompt('Cargo Type:');
+            const description = prompt('Description (optional):') || '';
+            const bay = parseInt(prompt('Bay:') || '0');
+            const row = parseInt(prompt('Row:') || '0');
+            const tier = parseInt(prompt('Tier:') || '0');
+            const container = { containerId, cargoType, description, bay, row, tier };
+            if (type === 'unloading') {
+                unloadingContainers.push(container);
+                renderContainers('unloading');
+            } else {
+                loadingContainers.push(container);
+                renderContainers('loading');
+            }
+        }
+
+        function renderContainers(type) {
+            const list = type === 'unloading' ? unloadingContainers : loadingContainers;
+            const listId = type === 'unloading' ? 'unloading-list' : 'loading-list';
+            const container = document.getElementById(listId);
+            if (list.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280; text-align: center;">No containers added yet</p>';
+                return;
+            }
+            container.innerHTML = list.map((c, i) => `
+            <div class="container-item">
+                <div class="container-header">
+                    <strong>${c.containerId}</strong>
+                    <button type="button" class="btn btn-danger btn-small" onclick="removeContainer('${type}', ${i})">Remove</button>
+                </div>
+                <div class="container-details">
+                    ${c.cargoType} | Bay: ${c.bay}, Row: ${c.row}, Tier: ${c.tier}
+                    ${c.description ? `<br>${c.description}` : ''}
+                </div>
+            </div>
+        `).join('');
+        }
+
+        function removeContainer(type, index) {
+            if (type === 'unloading') {
+                unloadingContainers.splice(index, 1);
+                renderContainers('unloading');
+            } else {
+                loadingContainers.splice(index, 1);
+                renderContainers('loading');
+            }
+        }
+
+        function addSafetyOfficer() {
+            const name = prompt('Officer Name:');
+            if (!name) return;
+            const citizenId = prompt('Citizen ID:');
+            const nationality = prompt('Nationality:');
+            safetyOfficers.push({ name, citizenId, nationality });
+            renderSafetyOfficers();
+        }
+
+        function renderSafetyOfficers() {
+            const container = document.getElementById('officers-list');
+            if (safetyOfficers.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280; text-align: center;">No safety officers added yet</p>';
+                return;
+            }
+            container.innerHTML = safetyOfficers.map((o, i) => `
+            <div class="container-item">
+                <div class="container-header">
+                    <strong>${o.name}</strong>
+                    <button type="button" class="btn btn-danger btn-small" onclick="removeSafetyOfficer(${i})">Remove</button>
+                </div>
+                <div class="container-details">
+                    Citizen ID: ${o.citizenId} | Nationality: ${o.nationality}
+                </div>
+            </div>
+        `).join('');
+        }
+
+        function removeSafetyOfficer(index) {
+            safetyOfficers.splice(index, 1);
+            renderSafetyOfficers();
+        }
+
+        function generateReview() {
+            const vesselSelect = document.getElementById('vesselIMO');
+            const dockSelect = document.getElementById('dockAssignment');
+            const review = `
+            <h3>Vessel & Schedule</h3>
+            <p><strong>Vessel:</strong> ${vesselSelect.options[vesselSelect.selectedIndex].text}</p>
+            <p><strong>ETA:</strong> ${document.getElementById('eta').value}</p>
+            <p><strong>ETD:</strong> ${document.getElementById('etd').value}</p>
+            <p><strong>Dock:</strong> ${dockSelect.options[dockSelect.selectedIndex].text}</p>
+            <h3 style="margin-top: 2rem;">Cargo</h3>
+            <p><strong>Unloading Containers:</strong> ${unloadingContainers.length}</p>
+            <p><strong>Loading Containers:</strong> ${loadingContainers.length}</p>
+            <h3 style="margin-top: 2rem;">Crew</h3>
+            <p><strong>Captain:</strong> ${document.getElementById('captainName').value}</p>
+            <p><strong>Crew Count:</strong> ${document.getElementById('crewCount').value}</p>
+            <p><strong>Safety Officers:</strong> ${safetyOfficers.length}</p>
+        `;
+            document.getElementById('review-content').innerHTML = review;
+        }
+
+        document.getElementById('notification-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                VesselImo: parseInt(document.getElementById('vesselIMO').value),
+                ETA: document.getElementById('eta').value,
+                ETD: document.getElementById('etd').value,
+                DockAssignment: document.getElementById('dockAssignment').value,
+                CargoManifests: [
+                    { Type: 'Unloading', Containers: unloadingContainers },
+                    { Type: 'Loading', Containers: loadingContainers }
+                ],
+                Crew: {
+                    CaptainName: document.getElementById('captainName').value,
+                    CrewCount: parseInt(document.getElementById('crewCount').value),
+                    SafetyOfficers: safetyOfficers
+                }
+            };
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            try {
+                const response = await fetch(`${API_BASE}/vessel-visit-notifications`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                if (!response.ok) {
+                    let errorMsg = 'Failed to create notification';
+                    try {
+                        const errorObj = await response.json();
+                        errorMsg = errorObj.message || errorObj.error || errorMsg;
+                    } catch (parseErr) {
+                        errorMsg = await response.text();
+                    }
+                    throw new Error(errorMsg);
+                }
+                let result = {};
+                try {
+                    result = await response.json();
+                } catch { /* OK if empty */ }
+                showSuccess('Vessel visit notification created successfully!');
+                setTimeout(() => window.location.href = `view.html?id=${result.businessId || ''}`, 2000);
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Notification';
+            }
+        });
+
+        function showError(message) {
+            document.getElementById('message-container').innerHTML = `<div class="error">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showSuccess(message) {
+            document.getElementById('message-container').innerHTML = `<div class="success">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        loadInitialData();
+    </script>
+</body>
+
+</html>

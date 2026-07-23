@@ -1,0 +1,143 @@
+@startuml L5-EditOrSubmitVesselVisitNotification
+
+title Edit or Submit Vessel Visit Notification - Process View
+
+actor "Shipping Agent Representative" as AGENT
+participant "EditNotification.html\n(SPA)" as SPA
+participant ":VesselVisitNotificationController" as CTRL
+participant ":VesselVisitNotificationService" as SVC
+participant ":VesselVisitNotificationRepository" as REPO
+participant ":PortManagementDB" as DB
+
+' ========================= USER ACTION =========================
+group Edit Notification Form
+    AGENT -> SPA : open edit.html?id={businessId}
+    note right of AGENT
+        The representative opens an existing Vessel Visit Notification\nin "InProgress" status to modify or complete details.
+    end note
+
+    SPA -> CTRL : GET /api/vessel-visit-notifications/{businessId}
+    activate CTRL
+    CTRL -> SVC : GetByBusinessIdAsync(businessId)
+    activate SVC
+    SVC -> REPO : GetByBusinessIdAsync(businessId)
+    activate REPO
+    REPO -> DB : SELECT * FROM VesselVisitNotifications WHERE BusinessId = ?
+    activate DB
+    DB --> REPO : VesselVisitNotification
+    deactivate DB
+    REPO --> SVC : VesselVisitNotification
+    deactivate REPO
+    SVC --> CTRL : VesselVisitNotificationDto
+    deactivate SVC
+    CTRL --> SPA : 200 OK + Notification Data
+    deactivate CTRL
+
+    SPA -> AGENT : renderEditForm(notification)
+end
+
+' ========================= USER EDITS DATA =========================
+group Modify and Save
+    AGENT -> SPA : fill fields (ETA, ETD, Dock, Cargo, Crew, Safety Officers)
+    AGENT -> SPA : click "Save Changes"
+    note right of AGENT
+        Representative can:\n• Keep status "InProgress" (save draft)\n• Or change status to "PendingApproval" (submit)
+    end note
+
+    SPA -> CTRL : PATCH /api/vessel-visit-notifications/{businessId}\n{updated fields JSON}
+    activate CTRL
+    CTRL -> SVC : UpdateAsync(businessId, dto)
+    activate SVC
+end
+
+' ========================= VALIDATION PHASE =========================
+group Validate Editable Status
+    SVC -> REPO : GetByBusinessIdAsync(businessId)
+    activate REPO
+    REPO -> DB : SELECT * FROM VesselVisitNotifications WHERE BusinessId = ?
+    activate DB
+    DB --> REPO : VesselVisitNotification
+    deactivate DB
+    REPO --> SVC : VesselVisitNotification
+    deactivate REPO
+
+    alt Notification not found
+        SVC --> CTRL : throws DomainValidationException("Notification not found")
+        CTRL --> SPA : 404 Not Found
+        SPA --> AGENT : showError("Notification not found")
+        deactivate CTRL
+
+    end alt
+
+    alt Status != InProgress
+        SVC --> CTRL : throws BusinessRuleViolationException("Cannot edit submitted or approved notification")
+        CTRL --> SPA : 400 Bad Request
+        SPA --> AGENT : showError("Only InProgress notifications can be edited")
+        deactivate CTRL
+
+    end alt
+end
+
+' ========================= UPDATE PHASE =========================
+group Apply Updates
+    note right of SVC
+        • Update ETA, ETD, DockAssignment, Crew, Cargo manifests<br>
+        • Recalculate validation if status changes to "PendingApproval"<br>
+        • Maintain "InProgress" if saving draft
+    end note
+
+    SVC -> SVC : ValidateData(dto)
+    alt Validation fails
+        SVC --> CTRL : throws DomainValidationException("Missing or invalid data")
+        CTRL --> SPA : 400 Bad Request + Validation errors
+        SPA --> AGENT : showError("Validation failed")
+        deactivate CTRL
+
+    end alt
+
+    SVC -> REPO : UpdateAsync(notification)
+    activate REPO
+    REPO -> DB : UPDATE VesselVisitNotifications SET ...fields... WHERE BusinessId = ?
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : COMMIT TRANSACTION
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC --> CTRL : Updated VesselVisitNotificationDto
+    deactivate SVC
+end
+
+' ========================= RESPONSE =========================
+group Return Result
+    CTRL --> SPA : 200 OK + Updated NotificationDto
+    deactivate CTRL
+
+    SPA --> AGENT : showSuccess("Notification updated successfully")
+    note right of SPA
+        Displays confirmation and redirects to\nView Notification (view.html?id=...)
+    end note
+end
+
+' ========================= ERROR HANDLING =========================
+alt Validation failed
+    SVC --> CTRL : throws DomainValidationException
+    CTRL --> SPA : 400 Bad Request + message
+    SPA --> AGENT : showError("Validation failed")
+end
+
+alt Internal error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> AGENT : showError("Unexpected server error")
+end
+
+@enduml

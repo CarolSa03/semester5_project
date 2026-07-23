@@ -1,0 +1,63 @@
+import express, { Request, Response } from 'express';
+import mongoose, { Schema, Document } from 'mongoose';
+import cors from 'cors';
+
+const PORT = process.env.PORT || 3000; 
+
+const MONGO_URI = process.env.MONGO_URI || '';
+
+if (!MONGO_URI) {
+  console.error("FATAL ERROR: MONGO_URI is not defined.");
+  process.exit(1);
+}
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+mongoose.connect(MONGO_URI)
+  .then(() => console.log(`Connected to MongoDB`))
+  .catch(err => console.error('MongoDB Connection Error:', err));
+
+const ItemSchema = new mongoose.Schema({
+  name: String,
+  timestamp: { type: Date, default: Date.now }
+});
+
+const ItemModel = mongoose.model('Item', ItemSchema);
+
+app.get('/items', async (req, res) => {
+  try {
+    const items = await ItemModel.find().sort({ timestamp: -1 });
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch items' });
+  }
+});
+
+app.post('/items', async (req, res) => {
+  try {
+    // We expect the frontend to send { "name": "some text" }
+    const newItem = new ItemModel({ name: req.body.name });
+    await newItem.save();
+    res.json({ success: true, item: newItem });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save item' });
+  }
+});
+
+app.get('/', (req: Request, res: Response) => {
+  res.send(`OEM Backend is running on port ${PORT}`);
+});
+
+app.get('/info', (req: Request, res: Response) => {
+  res.json({
+    status: 'active',
+    port: PORT,
+    db_status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`OEM Backend running on port ${PORT}`);
+});

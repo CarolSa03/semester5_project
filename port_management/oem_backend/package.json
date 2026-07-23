@@ -1,0 +1,49 @@
+{
+  "name": "oem_backend",
+  "version": "1.0.0",
+  "description": "OEM_BACKEND",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon src/index.ts",
+    "test": "mocha"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "celebrate": "^15.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "mocha": "^11.7.5",
+    "mongoose": "^9.1.1",
+    "node-fetch": "^3.3.2",
+    "reflect-metadata": "^0.2.2",
+    "typedi": "^0.10.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^5.2.3",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/mocha": "^10.0.10",
+    "@types/mongoose": "^5.11.96",
+    "@types/node": "^25.0.3",
+    "@types/sinon": "^21.0.0",
+    "@types/supertest": "^6.0.3",
+    "@types/uuid": "^10.0.0",
+    "chai": "^6.2.2",
+    "nodemon": "^3.1.11",
+    "sinon": "^21.0.1",
+    "supertest": "^7.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "winston": "^3.19.0"
+  }
+}

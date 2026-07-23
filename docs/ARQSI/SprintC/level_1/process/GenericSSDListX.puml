@@ -1,0 +1,23 @@
+@startuml
+title Level 1 Sequence Diagram (SD) - List Feature
+autonumber
+
+actor ":User" as User
+participant ":System" as System
+
+User -> System: Navigates to resource list
+activate System
+
+alt Resources found
+    System -->> User: Displays list of resources
+
+else No resources found
+    System -->> User: Displays empty state
+
+else Error occurs (e.g., invalid filter)
+    System -->> User: Shows error: Invalid filter / Server error
+end
+
+deactivate System
+
+@enduml

@@ -1,0 +1,47 @@
+@startuml
+title OEM - Generic Sequence Diagram for DELETE Operation
+
+participant ":API Client" as Client
+participant ":XRoutes" as Routes
+participant ":authenticate" as AuthMW
+participant ":XController" as Controller
+participant ":XService" as Service
+database "MongoDB" as MongoDB
+
+Client -> Routes : DELETE /api/xs/{id}
+activate Routes
+
+Routes -> AuthMW : authenticate(req, res, next)
+activate AuthMW
+
+AuthMW -> AuthMW : verifyIdToken(token)
+AuthMW -> AuthMW : getUserRole() from MasterData
+AuthMW -> AuthMW : req.user = AuthenticatedUser
+AuthMW -->> Routes : next()
+deactivate AuthMW
+
+Routes -> Controller : delete(req, res)
+activate Controller
+
+Controller -> Controller : Extract id from req.params
+Controller -> Service : delete(id)
+activate Service
+
+Service -> MongoDB : X.findByIdAndDelete(id)
+activate MongoDB
+MongoDB -->> Service : deleted (boolean)
+deactivate MongoDB
+
+alt Document Deleted
+    Service -->> Controller : true
+    Controller -->> Client : 204 No Content
+else Document Not Found
+    Service -->> Controller : false
+    Controller -->> Client : 404 Not Found
+end
+
+deactivate Service
+deactivate Controller
+deactivate Routes
+
+@enduml

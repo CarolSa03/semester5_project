@@ -1,0 +1,71 @@
+@startuml L5-SubmitVVN
+title Submit VVN - Change Status to "submitted"
+
+actor "Shipping Agent Representative" as SAR
+participant ":SPA" as SPA
+participant ":VesselVisitNotificationsController" as CTRL
+participant ":VesselVisitNotificationService" as SVC
+participant ":VesselVisitNotificationRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Submit VVN
+  SAR -> SPA : submitForApproval(vvnId)
+  activate SPA
+
+  SPA -> CTRL : PATCH /api/vvns/{id}/submit
+  activate CTRL
+
+  CTRL -> SVC : SubmitAsync(id,repUserId)
+  activate SVC
+
+  ' Load draft belonging to this representative
+  SVC -> REPO : GetDraftByIdForUserAsync(id,repUserId)
+  activate REPO
+  REPO -> DB : SELECT * FROM VVNs WHERE\nId=? AND status="in progress"
+  activate DB
+  DB --> REPO : entity
+  deactivate DB
+  REPO --> SVC : vvn
+  deactivate REPO
+
+  ' Business rule: must be fully complete
+  SVC -> SVC : ValidateAllRequiredFields(vvn)
+
+  alt missing fields/cargo validation failed
+    SVC --> CTRL : 400 Bad Request\n"VVN incomplete"
+    CTRL --> SPA : show reasons
+    SPA --> SAR : fix form
+  else valid
+    ' Transition state
+    SVC -> SVC : vvn.Status="submitted"
+
+    SVC -> REPO : UpdateAsync(vvn)
+    activate REPO
+    REPO -> DB : UPDATE VVNs ...
+    activate DB
+    DB --> REPO : ok
+    deactivate DB
+    REPO --> SVC : ok
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : SaveChanges()
+    activate DB
+    DB --> REPO : ok
+    deactivate DB
+    REPO --> SVC : ok
+    deactivate REPO
+
+    SVC -> SVC : ToDto(vvn)
+    SVC --> CTRL : VvnDto(status="submitted")
+    deactivate SVC
+
+    CTRL --> SPA : 200 OK + new status
+    deactivate CTRL
+
+    SPA --> SAR : Sent for approval
+    deactivate SPA
+  end
+end
+@enduml

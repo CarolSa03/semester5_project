@@ -1,0 +1,73 @@
+@startuml L5-ValidateCargo
+title Cargo/Container Validation (ISO 6346:2022)
+
+actor "Shipping Agent Representative" as SAR
+participant ":SPA" as SPA
+participant ":VesselVisitNotificationsController" as CTRL
+participant ":VesselVisitNotificationService" as SVC
+participant ":ContainerValidationService" as CONT_SVC
+participant ":CargoService" as CARGO_SVC
+participant ":VesselVisitNotificationRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Validate Cargo Manifest
+  SAR -> SPA : addOrModifyCargo(...)
+  activate SPA
+
+  SPA -> CTRL : PATCH /api/vvns/{id}/cargo\n{CargoManifest}
+  activate CTRL
+
+  CTRL -> SVC : UpdateCargoAsync(id,cargo,repUserId)
+  activate SVC
+
+  SVC -> CONT_SVC : ValidateContainerCodes(cargo.containers)
+  activate CONT_SVC
+  note right of CONT_SVC
+    Perform ISO-6346 structure + check digit validation
+  end note
+
+  alt invalid container
+    CONT_SVC --> SVC : error("ISO-6346 invalid")
+    SVC --> CTRL : 400 Bad Request\n{invalid containers}
+    CTRL --> SPA : show failed validation
+    SPA --> SAR : fix container IDs
+  else valid
+    CONT_SVC --> SVC : valid
+    deactivate CONT_SVC
+
+    ' Business logic for cargo
+    SVC -> CARGO_SVC : ProcessCargoRules(cargo)
+    activate CARGO_SVC
+    CARGO_SVC --> SVC : cargoValidated
+    deactivate CARGO_SVC
+
+    ' Persist changes
+    SVC -> REPO : UpdateCargo(vvnId, cargoValidated)
+    activate REPO
+    REPO -> DB : UPDATE Cargo ...
+    activate DB
+    DB --> REPO : updated
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : SaveChanges()
+    activate DB
+    DB --> REPO : ok
+    deactivate DB
+    REPO --> SVC : ok
+    deactivate REPO
+
+    SVC --> CTRL : 200 OK
+    deactivate SVC
+
+    CTRL --> SPA : cargo accepted
+    deactivate CTRL
+
+    SPA --> SAR : cargo validated
+    deactivate SPA
+  end
+end
+@enduml

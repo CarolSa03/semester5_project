@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Port Management System - Home</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.07);
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+            gap: 2rem;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0.5px 2px rgba(0, 0, 0, 0.09);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            transition: box-shadow 0.2s;
+        }
+
+        .menu-card:hover {
+            box-shadow: 0 4px 16px rgba(30, 58, 95, 0.07);
+        }
+
+        .menu-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .menu-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🛳️ Port Management System</h1>
+    </div>
+    <div class="container">
+        <div class="menu-grid">
+
+            <!-- Docks -->
+            <div class="menu-card">
+                <div class="menu-title">Docks</div>
+                <div class="menu-actions">
+                    <a href="dock/list.html" class="btn">List Docks</a>
+                    <a href="dock/create.html" class="btn">Create Dock</a>
+                </div>
+            </div>
+
+            <!-- Organisation -->
+            <div class="menu-card">
+                <div class="menu-title">Organisations</div>
+                <div class="menu-actions">
+                    <a href="organisation/list.html" class="btn">List Organisations</a>
+                    <a href="organisation/create.html" class="btn">Create Organisation</a>
+                </div>
+            </div>
+
+            <!-- Qualification -->
+            <div class="menu-card">
+                <div class="menu-title">Qualifications</div>
+                <div class="menu-actions">
+                    <a href="qualification/list.html" class="btn">List Qualifications</a>
+                    <a href="qualification/create.html" class="btn">Create Qualification</a>
+                </div>
+            </div>
+
+            <!-- Representative -->
+            <div class="menu-card">
+                <div class="menu-title">Representatives</div>
+                <div class="menu-actions">
+                    <a href="representative/list.html" class="btn">List Representatives</a>
+                    <a href="representative/create.html" class="btn">Create Representative</a>
+                </div>
+            </div>
+
+            <!-- Staff -->
+            <div class="menu-card">
+                <div class="menu-title">Staff</div>
+                <div class="menu-actions">
+                    <a href="staff/list.html" class="btn">List Staff</a>
+                    <a href="staff/create.html" class="btn">Create Staff</a>
+                </div>
+            </div>
+
+            <!-- Storage -->
+            <div class="menu-card">
+                <div class="menu-title">Storage</div>
+                <div class="menu-actions">
+                    <a href="storage/list.html" class="btn">List Storage</a>
+                    <a href="storage/create.html" class="btn">Create Storage</a>
+                </div>
+            </div>
+
+            <!-- Vessel -->
+            <div class="menu-card">
+                <div class="menu-title">Vessels</div>
+                <div class="menu-actions" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                    <a href="vessel/record/list.html" class="btn">List Vessel Records</a>
+                    <a href="vessel/record/create.html" class="btn">Create Vessel Record</a>
+                    <a href="vessel/type/list.html" class="btn">List Vessel Types</a>
+                    <a href="vessel/type/create.html" class="btn">Create Vessel Type</a>
+                    <a href="vessel/visit-notification/list.html" class="btn">List Visit Notifications</a>
+                    <a href="vessel/visit-notification/create.html" class="btn">Create Visit Notification</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+
+</html>

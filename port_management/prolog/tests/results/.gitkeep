@@ -1,0 +1,5 @@
+# This directory stores test results
+# Files are generated automatically and should not be committed
+
+*.json
+*.txt

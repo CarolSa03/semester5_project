@@ -1,0 +1,40 @@
+@startuml L5-SearchStorageAreas
+title Search Storage Areas - Process View
+
+actor "Port Authority Officer" as PAO
+participant ":SPA" as SPA
+participant ":StorageAreaController" as CTRL
+participant ":StorageAreaService" as SVC
+participant ":StorageAreaRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Search Storage Areas
+  PAO -> SPA : filter(identifier?, type?, dock?, page, size)
+  activate SPA
+
+  SPA -> CTRL : GET /api/storageareas?...query...
+  activate CTRL
+
+  CTRL -> SVC : SearchAsync(filters,pagination)
+  activate SVC
+
+  SVC -> REPO : SearchAsync(filters,pagination)
+  activate REPO
+  REPO -> DB : SELECT * FROM StorageAreas WHERE ... LIMIT ... OFFSET ...
+  activate DB
+  DB --> REPO : Paged<StorageArea>
+  deactivate DB
+  REPO --> SVC : list
+  deactivate REPO
+
+  SVC -> SVC : MapToDto(list)
+  SVC --> CTRL : Page<StorageAreaDto>
+  deactivate SVC
+
+  CTRL --> SPA : 200 OK + results
+  deactivate CTRL
+
+  SPA --> PAO : display filtered list
+  deactivate SPA
+end
+@enduml

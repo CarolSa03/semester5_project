@@ -1,0 +1,25 @@
+
+@startuml Level1-Context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Level 1: System Context - Port Manager
+
+Person(portOfficer, "Port Authority Officer", "Manages docks, vessels, storage areas and port operations")
+Person(systemAdmin, "System Administrator", "Manages and maintains the Port Manager System")
+Person(shippingAgentRep, "Shipping Agent Representative", "Coordinates Vessel Visit Notfications")
+Person(logisticsManager, "Logistics Operator", "Manage Staff and Physical Resources at the port")
+
+System(portManager, "Port Manager System", "Manages port operations including docks, containers, vessels, and scheduling")
+
+System_Ext(azureMsal, "IAM", "OAuth2/OIDC authentication and authorization")
+System_Ext(database, "SQL Server Database", "Persistent storage for port operational data")
+
+Rel(portOfficer, portManager, "Manages docks and vessels", "HTTPS/Browser")
+Rel(portManager, azureMsal, "OAuth2/OIDC")
+Rel(portManager, database, "Reads from and writes to", "SQL")
+Rel(systemAdmin, portManager, "Administers the system", "HTTPS/Browser")
+Rel(shippingAgentRep, portManager, "Submits, changes and view status of Vessel Visit Notifications", "HTTPS/Browser")
+Rel(logisticsManager, portManager, "Manages staff and physical resources", "HTTPS/Browser")
+
+
+@enduml

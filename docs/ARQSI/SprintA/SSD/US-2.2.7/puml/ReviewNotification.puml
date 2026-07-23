@@ -1,0 +1,78 @@
+@startuml L5-ReviewVesselVisitNotification
+
+title Review Vessel Visit Notification - Process View
+
+actor "Port Authority Officer" as OFFICER
+participant "ViewNotification.html\n(SPA)" as SPA
+participant ":VesselVisitNotificationController" as CTRL
+participant ":VesselVisitNotificationService" as SVC
+participant ":VesselVisitNotificationRepository" as REPO
+participant ":PortManagementDB" as DB
+
+' ========================= USER ACTION =========================
+group Open Notification Details
+    OFFICER -> SPA : click "View" on a Vessel Visit Notification
+    note right of OFFICER
+        The officer selects a notification from the list\nfor detailed review before decision.
+    end note
+end
+
+' ========================= REQUEST FLOW =========================
+group Fetch Notification Data
+    SPA -> CTRL : GET /api/vessel-visit-notifications/{businessId}
+    activate CTRL
+
+    CTRL -> SVC : GetByBusinessIdAsync(businessId)
+    activate SVC
+end
+
+' ========================= RETRIEVE DATA =========================
+group Retrieve Notification Entity
+    SVC -> REPO : GetByBusinessIdAsync(businessId)
+    activate REPO
+    REPO -> DB : SELECT * FROM VesselVisitNotifications WHERE BusinessId = ?
+    activate DB
+    DB --> REPO : VesselVisitNotification or null
+    deactivate DB
+    REPO --> SVC : VesselVisitNotification or null
+    deactivate REPO
+
+    alt Notification not found
+        SVC --> CTRL : null
+        CTRL --> SPA : 404 Not Found + { error: "Notification not found" }
+        SPA --> OFFICER : showError("Notification not found")
+        deactivate CTRL
+
+    end alt
+end
+
+' ========================= MAP TO DTO =========================
+group Map Entity to DTO
+    SVC -> SVC : MapToDto(entity)
+    note right of SVC
+        Converts domain entity to VesselVisitNotificationDto:\n• BusinessId\n• Vessel info\n• Cargo manifests\n• Crew\n• Status\n• Dates\n• Approval/Rejection details
+    end note
+    SVC --> CTRL : VesselVisitNotificationDto
+    deactivate SVC
+end
+
+' ========================= RESPONSE =========================
+group Return Result
+    CTRL --> SPA : 200 OK + VesselVisitNotificationDto
+    deactivate CTRL
+
+    SPA -> SPA : Render notification details\n(ETA, ETD, crew, manifests, status)
+    note right of SPA
+        Populates all fields:\n• Vessel and dock\n• Manifests (Loading/Unloading)\n• Crew & officers\n• Approval/Rejection metadata\n• Status badge\n• Edit button if InProgress
+    end note
+
+    SPA --> OFFICER : Display "View Notification" page
+end
+
+' ========================= ERROR HANDLING =========================
+alt Internal server error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> OFFICER : showError("Failed to load notification details")
+end
+
+@enduml

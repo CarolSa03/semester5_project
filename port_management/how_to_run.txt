@@ -1,0 +1,16 @@
+Run Development Environment(Local)
+docker compose -f docker-compose.yml -f docker-compose-dev.yml up -d --build
+dotnet run
+npm run dev
+
+First time running
+npm install
+
+Restart Containers(Full Reset)
+docker compose -f docker-compose.yml -f docker-compose-dev.yml down
+
+
+Run Staging Environment(DEI VM)
+docker compose -f docker-compose.yml -f docker-compose-staging.yml up -d --build
+access via http://vs565.dei.isep.ipp.pt:2226
+

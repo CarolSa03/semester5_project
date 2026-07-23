@@ -1,0 +1,91 @@
+@startuml L5-CreateVessel
+title Create Vessel Record - Process View
+
+actor "Port Authority Officer" as PAO
+participant ":SPA" as SPA
+participant ":VesselsController" as CTRL
+participant ":VesselService" as SVC
+participant ":VesselTypeService" as VT_SVC
+participant ":VesselRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Create Vessel
+  PAO -> SPA : fillForm(imoNumber, name,\nvesselTypeId, operator)
+  activate SPA
+
+  SPA -> CTRL : POST /api/vessels\n{CreateVesselDto}
+  activate CTRL
+
+  CTRL -> SVC : AddAsync(dto)
+  activate SVC
+
+  ' Validate IMO Format (checksum)
+  SVC -> SVC : ValidateIMOFormat(dto.imoNumber)
+  alt invalid IMO
+    SVC --> CTRL : 400 Bad Request\n"Invalid IMO number"
+    CTRL --> SPA : show error
+    SPA --> PAO : fix input
+  else valid IMO
+    ' Ensure unique IMO
+    SVC -> REPO : ExistsByImoAsync(dto.imoNumber)
+    activate REPO
+    REPO -> DB : SELECT COUNT(*) ...
+    activate DB
+    DB --> REPO : 0
+    deactivate DB
+    REPO --> SVC : false
+    deactivate REPO
+
+    ' Validate vessel type
+    SVC -> VT_SVC : GetByIdAsync(vesselTypeId)
+    activate VT_SVC
+    VT_SVC -> DB : SELECT FROM VesselTypes WHERE Id=?
+    activate DB
+    DB --> VT_SVC : vesselType or null
+    deactivate DB
+
+    alt vessel type not found
+      VT_SVC --> SVC : null
+      SVC --> CTRL : 400 Bad Request\n"Invalid vessel type"
+      CTRL --> SPA : show error
+      SPA --> PAO : correct form data
+    else vessel type valid
+      VT_SVC --> SVC : vesselTypeDto
+      deactivate VT_SVC
+
+      ' Create entity
+      SVC -> SVC : new Vessel(dto)
+
+      ' Save
+      SVC -> REPO : AddAsync(entity)
+      activate REPO
+      REPO -> DB : INSERT INTO Vessels ...
+      activate DB
+      DB --> REPO : inserted(Id)
+      deactivate DB
+      REPO --> SVC : entity
+      deactivate REPO
+
+      SVC -> REPO : SaveChangesAsync()
+      activate REPO
+      REPO -> DB : SaveChanges()
+      activate DB
+      DB --> REPO : success
+      deactivate DB
+      REPO --> SVC : success
+      deactivate REPO
+
+      ' Response DTO
+      SVC -> SVC : ToDto(entity)
+      SVC --> CTRL : VesselDto
+      deactivate SVC
+
+      CTRL --> SPA : 201 Created + VesselDto
+      deactivate CTRL
+
+      SPA --> PAO : success message
+      deactivate SPA
+    end
+  end
+end
+@enduml

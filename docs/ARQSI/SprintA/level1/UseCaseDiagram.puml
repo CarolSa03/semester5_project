@@ -1,0 +1,42 @@
+@startuml
+
+left to right direction
+
+actor "Logistics Operator" as LO
+actor "Shipping Agent Representative" as SAR
+actor "Administrator" as Admin
+actor "Port Authority Officer" as PAO
+
+
+usecase "UC1 - Create and update vessel types" as UC1
+usecase "UC2 - Register and update vessel records" as UC2
+usecase "UC3 - Register and update docks" as UC3
+usecase "UC4 - Register and update storage areas" as UC4
+usecase "UC5 - Register shipping agent organization" as UC5
+usecase "UC6 - Register and manage shipping agent representatives" as UC6
+usecase "UC7 - Review pending vessel visit notifications" as UC7
+usecase "UC8 - Create/submit vessel visit notifications" as UC8
+usecase "UC9 - Change/complete vessel visit notifications" as UC9
+usecase "UC10 - View the status of all my vessel visit notifications" as UC10
+usecase "UC11 - Register and manage operating staff members" as UC11
+usecase "UC12 - Register and manage physical resources" as UC12
+usecase "UC13 - Register and manage qualifications" as UC13
+
+PAO --> UC6
+PAO --> UC7
+SAR --> UC8
+SAR --> UC9
+SAR --> UC10
+LO --> UC11
+LO --> UC12
+LO --> UC13
+PAO --> UC1
+PAO --> UC2
+PAO --> UC3
+PAO --> UC4
+PAO --> UC5
+
+
+
+
+@enduml

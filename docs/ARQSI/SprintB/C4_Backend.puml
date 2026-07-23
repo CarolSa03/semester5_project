@@ -1,0 +1,63 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+'-----------------------------------------------------
+' BACKEND API (.NET)
+'-----------------------------------------------------
+Container_Boundary(Backend, "Backend API (.NET)") {
+
+    '===========================
+    ' API LAYER (Controllers)
+    '===========================
+    Container_Boundary(ApiLayer, "API Layer (Controllers)") {
+
+        Component(AdminController, "AdminController.cs", "Manages admin users", "ASP.NET Controller")
+        Component(AuthController, "AuthController.cs", "Authentication & tokens", "ASP.NET Controller")
+        Component(DockController, "DockController.cs", "Dock operations", "ASP.NET Controller")
+        Component(PhysicalResourceController, "PhysicalResourceController.cs", "Physical Resource operations", "ASP.NET Controller")
+        Component(QualificationController, "QualificationController.cs", "Qualification operations", "ASP.NET Controller")
+        Component(ShippingAgentOrgController, "ShippingAgentOrganizationController.cs", "Shipping Agent Organization ops", "ASP.NET Controller")
+        Component(ShippingAgentRepController, "ShippingAgentRepresentativeController.cs", "Shipping Agent Rep ops", "ASP.NET Controller")
+        Component(StaffMemberController, "StaffMemberController.cs", "Staff management", "ASP.NET Controller")
+        Component(StorageAreaController, "StorageAreaController.cs", "Storage area management", "ASP.NET Controller")
+        Component(VesselRecordController, "VesselRecordController.cs", "Vessel record operations", "ASP.NET Controller")
+        Component(VesselTypeController, "VesselTypeController.cs", "Vessel type operations", "ASP.NET Controller")
+        Component(VesselVisitNotifController, "VesselVisitNotificationController.cs", "Vessel visit notifications", "ASP.NET Controller")
+    }
+
+
+    '===========================
+    ' APPLICATION LAYER (Services)
+    '===========================
+    Container_Boundary(AppLayer, "Application Layer (Services)") {
+
+        Component(AuditService, "AuditService.cs", "Audit operations", "C# Service")
+        Component(AuthService, "AuthService.cs", "Authentication logic + roles", "C# Service")
+        Component(DockService, "DockService.cs", "Business rules for docks", "C# Service")
+        Component(EmailService, "EmailService.cs", "Email notifications", "C# Service")
+
+        Component(PhysicalResourceService, "PhysicalResourceService.cs", "Physical Resource logic", "C# Service")
+        Component(QualificationService, "QualificationService.cs", "Qualification rules", "C# Service")
+
+        Component(ShipAgentOrgService, "ShippingAgentOrganizationService.cs", "Shipping Agent Org rules", "C# Service")
+        Component(ShipAgentRepService, "ShippingAgentRepresentativeService.cs", "Shipping Agent Rep rules", "C# Service")
+
+        Component(StaffMemberService, "StaffMemberService.cs", "Staff domain logic", "C# Service")
+        Component(StorageAreaService, "StorageAreaServices.cs", "Storage area rules", "C# Service")
+
+        Component(VesselRecordService, "VesselRecordServices.cs", "Vessel record logic", "C# Service")
+        Component(VesselTypeService, "VesselTypeService.cs", "Vessel type logic", "C# Service")
+        Component(VesselVisitNotifService, "VesselVisitNotificationService.cs", "Visit notification rules", "C# Service")
+    }
+
+
+    '===========================
+    ' DOMAIN LAYER
+    '===========================
+    Container_Boundary(DomainLayer, "Domain Layer (Entities & Aggregates)") {
+        Component(DomainEntities, "Entities / Aggregates", "Core domain model", "C# Domain Objects")
+        Component(DomainServices, "Domain Services", "Pure business logic", "C# Domain Service")
+    }
+
+
+    '========

@@ -1,0 +1,21 @@
+@startuml
+title Level 1 Sequence Diagram (SD) - REGISTER/ADD User Story
+autonumber
+
+actor ":Port Authority Officer" as PAO
+participant ":Port Management" as System
+
+PAO -> System: Asks to create a new resource
+activate System
+
+
+    System -->> PAO: asks to insert the necessary data
+    
+    PAO -> System : inserted data
+
+    System -->> PAO: resource created / Error in data
+
+
+deactivate System
+
+@enduml

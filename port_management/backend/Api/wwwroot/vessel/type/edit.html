@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Vessel Type - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        label .required {
+            color: #dc2626;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .field-error {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        input.invalid,
+        textarea.invalid {
+            border-color: #dc2626;
+        }
+
+        .status-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-toggle input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin: 2rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚢 Port Management System - Edit Vessel Type</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div id="loading" class="loading">Loading vessel type...</div>
+
+            <div id="content" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">Edit Vessel Type</h2>
+
+                <div id="message-container"></div>
+
+                <form id="edit-form">
+                    <input type="hidden" id="vtId">
+
+                    <div class="form-group">
+                        <label for="name">Vessel Type Name <span class="required">*</span></label>
+                        <input type="text" id="name" required>
+                        <div class="field-error" id="name-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description"></textarea>
+                        <div class="field-error" id="description-error"></div>
+                    </div>
+
+                    <div class="section-title">Container Specifications</div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="capacityTEU">Capacity (TEU)</label>
+                            <input type="number" id="capacityTEU" min="0">
+                            <div class="field-error" id="capacityTEU-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxRows">Max Rows</label>
+                            <input type="number" id="maxRows" min="0">
+                            <div class="field-error" id="maxRows-error"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="maxBays">Max Bays</label>
+                            <input type="number" id="maxBays" min="0">
+                            <div class="field-error" id="maxBays-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxTiers">Max Tiers</label>
+                            <input type="number" id="maxTiers" min="0">
+                            <div class="field-error" id="maxTiers-error"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="status-toggle">
+                            <input type="checkbox" id="isActive">
+                            <label for="isActive" style="margin: 0;">Vessel Type is Active</label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">Save Changes</button>
+                        <a href="list.html" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const vtId = urlParams.get('id');
+
+        if (!vtId) {
+            alert('No vessel type ID provided');
+            window.location.href = 'list.html';
+        }
+
+        async function loadVesselType() {
+            try {
+                const response = await fetch(`${API_BASE}/VesselType/${vtId}`);
+                if (!response.ok) throw new Error('Vessel type not found');
+
+                const vt = await response.json();
+
+                document.getElementById('vtId').value = vt.id;
+                document.getElementById('name').value = vt.name || '';
+                document.getElementById('description').value = vt.description || '';
+                document.getElementById('capacityTEU').value = vt.capacityTEU || '';
+                document.getElementById('maxRows').value = vt.maxRows || '';
+                document.getElementById('maxBays').value = vt.maxBays || '';
+                document.getElementById('maxTiers').value = vt.maxTiers || '';
+                document.getElementById('isActive').checked = vt.isActive;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load vessel type');
+                window.location.href = 'list.html';
+            }
+        }
+
+        document.getElementById('edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearErrors();
+
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                description: document.getElementById('description').value.trim() || null,
+                capacityTEU: document.getElementById('capacityTEU').value ? parseInt(document.getElementById('capacityTEU').value) : null,
+                maxRows: document.getElementById('maxRows').value ? parseInt(document.getElementById('maxRows').value) : null,
+                maxBays: document.getElementById('maxBays').value ? parseInt(document.getElementById('maxBays').value) : null,
+                maxTiers: document.getElementById('maxTiers').value ? parseInt(document.getElementById('maxTiers').value) : null,
+                isActive: document.getElementById('isActive').checked
+            };
+
+            let isValid = true;
+            if (!formData.name) {
+                showFieldError('name', 'Vessel type name is required');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const response = await fetch(`${API_BASE}/VesselType/${vtId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to update vessel type');
+                }
+
+                showSuccess('Vessel type updated successfully!');
+                setTimeout(() => window.location.href = `view.html?id=${vtId}`, 1500);
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Changes';
+            }
+        });
+
+        function clearErrors() {
+            document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+            document.querySelectorAll('input, textarea').forEach(el => el.classList.remove('invalid'));
+            document.getElementById('message-container').innerHTML = '';
+        }
+
+        function showFieldError(fieldName, message) {
+            document.getElementById(`${fieldName}-error`).textContent = message;
+            document.getElementById(fieldName).classList.add('invalid');
+        }
+
+        function showError(message) {
+            document.getElementById('message-container').innerHTML = `<div class="error">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showSuccess(message) {
+            document.getElementById('message-container').innerHTML = `<div class="success">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        loadVesselType();
+    </script>
+</body>
+
+</html>

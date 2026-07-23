@@ -1,0 +1,94 @@
+@startuml L5-UpdateStorageArea
+title Update Storage Area - Process View
+
+actor "Port Authority Officer" as PAO
+participant ":SPA" as SPA
+participant ":StorageAreaController" as CTRL
+participant ":StorageAreaService" as SVC
+participant ":DockService" as DOCK_SVC
+participant ":StorageAreaRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Update Storage Area
+  PAO -> SPA : openEditForm(areaId)
+  activate SPA
+
+  SPA -> CTRL : PATCH /api/storageareas/{id}\n{UpdateStorageAreaDto}
+  activate CTRL
+
+  CTRL -> SVC : UpdateAsync(id,dto)
+  activate SVC
+
+  SVC -> REPO : GetByIdAsync(id)
+  activate REPO
+  REPO -> DB : SELECT * FROM StorageAreas WHERE Id=?
+  activate DB
+  DB --> REPO : area or null
+  deactivate DB
+  REPO --> SVC : area
+  deactivate REPO
+
+  alt not found
+    SVC --> CTRL : 404 Not Found
+    CTRL --> SPA : show not found
+    SPA --> PAO : notify
+  else found
+    ' validate capacity vs current occupancy
+    SVC -> SVC : Validate(area.CurrentOcc <= dto.MaxCapacity)
+
+    alt occupancy exceeds new capacity
+      SVC --> CTRL : 409 Conflict "Cannot reduce capacity below current occupancy"
+      CTRL --> SPA : show constraint error
+      SPA --> PAO : correct data
+    else ok
+      ' validate dock associations
+      SVC -> DOCK_SVC : ValidateDockIds(dto.docksServed)
+      activate DOCK_SVC
+      DOCK_SVC -> DB : SELECT Docks WHERE Id IN list
+      activate DB
+      DB --> DOCK_SVC : dockIds exist
+      deactivate DB
+      alt missing dock
+        DOCK_SVC --> SVC : error
+        SVC --> CTRL : 400 Bad Request
+        CTRL --> SPA : show error
+        SPA --> PAO : correct docks
+      else valid
+        DOCK_SVC --> SVC : valid
+        deactivate DOCK_SVC
+
+        ' Apply updates
+        SVC -> SVC : area.UpdateFrom(dto)
+
+        SVC -> REPO : UpdateAsync(area)
+        activate REPO
+        REPO -> DB : UPDATE StorageAreas ...
+        activate DB
+        DB --> REPO : updated
+        deactivate DB
+        REPO --> SVC : success
+        deactivate REPO
+
+        SVC -> REPO : SaveChangesAsync()
+        activate REPO
+        REPO -> DB : SaveChanges()
+        activate DB
+        DB --> REPO : ok
+        deactivate DB
+        REPO --> SVC : ok
+        deactivate REPO
+
+        SVC -> SVC : ToDto(area)
+        SVC --> CTRL : StorageAreaDto
+        deactivate SVC
+
+        CTRL --> SPA : 200 OK + StorageAreaDto
+        deactivate CTRL
+
+        SPA --> PAO : updated successfully
+        deactivate SPA
+      end
+    end
+  end
+end
+@enduml

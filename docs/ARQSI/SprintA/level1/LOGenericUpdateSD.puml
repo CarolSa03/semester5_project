@@ -1,0 +1,24 @@
+@startuml
+title Level 1 Sequence Diagram (SD) - UPDATE User Story
+autonumber
+
+actor ":Logistics Operator" as LO
+participant ":Port Management" as System
+
+LO -> System: Asks to update a new resource
+activate System
+
+    System -->> LO: show available resources
+
+    LO -> System: selected the resource
+
+    System -->> LO: asks to insert the necessary data
+    
+    LO -> System : inserts data
+
+    System -->>LO : resource updated / Error in data
+
+
+deactivate System
+
+@enduml

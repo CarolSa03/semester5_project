@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Storage Area - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .card-header h2 {
+            font-size: 1.5rem;
+            color: #1e3a5f;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .detail-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            color: #1f2937;
+        }
+
+        .capacity-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .capacity-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .capacity-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .capacity-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .capacity-bar {
+            height: 24px;
+            background: #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .capacity-fill {
+            height: 100%;
+            background: #2563eb;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .capacity-fill.warning {
+            background: #f59e0b;
+        }
+
+        .capacity-fill.danger {
+            background: #dc2626;
+        }
+
+        .docks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .dock-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 1rem;
+        }
+
+        .dock-name {
+            font-weight: 600;
+            color: #2563eb;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .dock-location {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .empty-docks {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .notes-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 1rem;
+            color: #374151;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚚 Port Management System - Storage Area Details</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div id="content">
+                <div class="loading">Loading storage area details...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const storageId = urlParams.get('id');
+
+        if (!storageId) {
+            document.getElementById('content').innerHTML =
+                '<div class="error">Storage area ID is required</div>';
+        } else {
+            loadStorageArea();
+        }
+
+        async function loadStorageArea() {
+            try {
+                const response = await fetch(`${API_BASE}/StorageArea/${encodeURIComponent(storageId)}`);
+                if (!response.ok) throw new Error('Storage area not found');
+
+                const storage = await response.json();
+                displayStorageArea(storage);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('content').innerHTML =
+                    `<div class="error">${error.message}</div>`;
+            }
+        }
+
+        function displayStorageArea(storage) {
+            const utilization = (storage.currentCapacityTEU / storage.maxCapacityTEU) * 100;
+            const utilizationClass = utilization >= 90 ? 'danger' : utilization >= 70 ? 'warning' : '';
+
+            const docksHTML = storage.servedDocks && storage.servedDocks.length > 0
+                ? `
+                    <div class="docks-grid">
+                        ${storage.servedDocks.map(dock => `
+                            <div class="dock-card">
+                                <div class="dock-name">${dock.name || 'Dock #' + dock.id}</div>
+                                <div class="dock-location">${dock.location || 'Location not specified'}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `
+                : '<div class="empty-docks">No docks assigned</div>';
+
+            const html = `
+                <div class="card-header">
+                    <h2>${storage.id}</h2>
+                    <div class="actions">
+                        <a href="edit.html?id=${encodeURIComponent(storage.id)}" class="btn btn-primary">Edit</a>
+                        <a href="list.html" class="btn btn-secondary">Back to List</a>
+                    </div>
+                </div>
+
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Storage Area ID</div>
+                        <div class="detail-value">${storage.id}</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Type</div>
+                        <div class="detail-value">${storage.type}</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Location</div>
+                        <div class="detail-value">${storage.location}</div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Capacity Overview</div>
+                        <div class="capacity-section">
+                            <div class="capacity-card">
+                                <div class="capacity-label">Current Capacity</div>
+                                <div class="capacity-value">${storage.currentCapacityTEU} TEU</div>
+                            </div>
+                            <div class="capacity-card">
+                                <div class="capacity-label">Maximum Capacity</div>
+                                <div class="capacity-value">${storage.maxCapacityTEU} TEU</div>
+                            </div>
+                        </div>
+                        <div class="capacity-bar">
+                            <div class="capacity-fill ${utilizationClass}" style="width: ${utilization}%">
+                                ${utilization.toFixed(1)}% utilized
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Served Docks</div>
+                        <div class="detail-value">
+                            ${docksHTML}
+                        </div>
+                    </div>
+
+                    ${storage.notes ? `
+                        <div class="detail-item">
+                            <div class="detail-label">Notes</div>
+                            <div class="notes-box">${storage.notes}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            document.getElementById('content').innerHTML = html;
+        }
+    </script>
+</body>
+
+</html>

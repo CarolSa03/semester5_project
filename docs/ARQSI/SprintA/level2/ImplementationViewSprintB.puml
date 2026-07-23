@@ -1,0 +1,109 @@
+@startuml
+
+skinparam backgroundColor white
+skinparam component {
+    BackgroundColor #ADD8E6
+    BorderColor #000000
+}
+skinparam rectangle {
+    BackgroundColor #ADD8E6
+    BorderColor #000000
+}
+
+' ======================================================
+'   UI + API (círculos no topo, TODOS OS TEUS)
+' ======================================================
+circle "UI Staff" as ui_staff #ADD8E6
+circle "API Staff" as api_staff #ADD8E6
+
+circle "UI Dock" as ui_dock #ADD8E6
+circle "API Dock" as api_dock #ADD8E6
+
+circle "UI PhysicalR" as ui_physical #ADD8E6
+circle "API PhysicalR" as api_physical #ADD8E6
+
+circle "UI Qualif" as ui_qualification #ADD8E6
+circle "API Qualif" as api_qualification #ADD8E6
+
+circle "UI Storage" as ui_storage #ADD8E6
+circle "API Storage" as api_storage #ADD8E6
+
+circle "UI ShipOrg" as ui_shiporg #ADD8E6
+circle "API ShipOrg" as api_shiporg #ADD8E6
+
+circle "UI ShipRep" as ui_shiprep #ADD8E6
+circle "API ShipRep" as api_shiprep #ADD8E6
+
+circle "UI VType" as ui_vtype #ADD8E6
+circle "API VType" as api_vtype #ADD8E6
+
+circle "UI VRecord" as ui_vrecord #ADD8E6
+circle "API VRecord" as api_vrecord #ADD8E6
+
+circle "UI VNotif" as ui_vnotif #ADD8E6
+circle "API VNotif" as api_vnotif #ADD8E6
+
+
+' ======================================================
+'   CAIXA PRINCIPAL (C4 SYSTEM)
+'   IGUAL AO PRINT DO PDF
+' ======================================================
+rectangle "<<component>>\n<<C4 System>>\nPortManagement" as pms {
+
+    ' FRONTEND (UI MAIN CONTAINER)
+    component "<<component>>\n<<C4 Container>>\nUI" as ui_container
+
+    ' BACKEND APPLICATION LAYER
+    component "<<component>>\n<<C4 Container>>\nApplication Layer" as app_container
+
+    ' DOMAIN MODEL
+    component "<<component>>\n<<C4 Container>>\nDomain Model" as domain_container
+
+    ' MASTER DATA / INFRASTRUCTURE
+    component "<<component>>\n<<C4 Container>>\nMaster Data" as masterdata_container
+
+
+    ' ==================================================
+    '  RELAÇÕES ENTRE CONTAINERS (IGUAL AO PRINT)
+    ' ==================================================
+    ui_container --> app_container
+    app_container --> domain_container
+    domain_container --> masterdata_container
+}
+
+
+' ======================================================
+'   LIGAÇÕES TOP → CAIXA (VERTICAIS)
+' ======================================================
+
+ui_staff --> ui_container
+api_staff --> app_container
+
+ui_dock --> ui_container
+api_dock --> app_container
+
+ui_physical --> ui_container
+api_physical --> app_container
+
+ui_qualification --> ui_container
+api_qualification --> app_container
+
+ui_storage --> ui_container
+api_storage --> app_container
+
+ui_shiporg --> ui_container
+api_shiporg --> app_container
+
+ui_shiprep --> ui_container
+api_shiprep --> app_container
+
+ui_vtype --> ui_container
+api_vtype --> app_container
+
+ui_vrecord --> ui_container
+api_vrecord --> app_container
+
+ui_vnotif --> ui_container
+api_vnotif --> app_container
+
+@enduml

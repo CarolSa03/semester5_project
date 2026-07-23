@@ -1,0 +1,141 @@
+@startuml L5-ApproveVesselVisitNotification
+
+title Approve Vessel Visit Notification - Process View
+
+actor "Port Authority Officer" as OFFICER
+participant "ViewNotification.html\n(SPA)" as SPA
+participant ":VesselVisitNotificationController" as CTRL
+participant ":VesselVisitNotificationService" as SVC
+participant ":VesselVisitNotificationRepository" as NREPO
+participant ":DockRepository" as DREPO
+participant ":PortManagementDB" as DB
+
+' ========================= USER ACTION =========================
+group Approve Notification
+    OFFICER -> SPA : click "Approve" and enter DockAssignment
+    note right of OFFICER
+        Officer assigns a dock and approves\nnotification for vessel arrival.
+    end note
+end
+
+' ========================= REQUEST FLOW =========================
+group Submit Approval Request
+    SPA -> CTRL : PATCH /api/vessel-visit-notifications/{businessId}/approve\n{DockAssignment}
+    activate CTRL
+
+    CTRL -> SVC : ApproveAsync(businessId, DockAssignment, officerId)
+    activate SVC
+end
+
+' ========================= RETRIEVE & VALIDATE =========================
+group Retrieve Notification
+    SVC -> NREPO : GetByBusinessIdAsync(businessId)
+    activate NREPO
+    NREPO -> DB : SELECT * FROM VesselVisitNotifications WHERE BusinessId = ?
+    activate DB
+    DB --> NREPO : VesselVisitNotification or null
+    deactivate DB
+    NREPO --> SVC : VesselVisitNotification or null
+    deactivate NREPO
+
+    alt Notification not found
+        SVC --> CTRL : throws DomainValidationException("Notification not found")
+        CTRL --> SPA : 404 Not Found
+        SPA --> OFFICER : showError("Notification not found")
+        deactivate CTRL
+
+    end alt
+end
+
+group Validate Approval Conditions
+    note right of SVC
+        • Must be PendingApproval<br>
+        • DockAssignment required<br>
+        • Dock must exist<br>
+        • No scheduling conflicts
+    end note
+
+    alt Status != PendingApproval
+        SVC --> CTRL : throws BusinessRuleViolationException("Only pending notifications can be approved")
+        CTRL --> SPA : 400 Bad Request + "Business rule violation"
+        SPA --> OFFICER : showError("Invalid status for approval")
+        deactivate CTRL
+
+    end alt
+
+    SVC -> DREPO : GetByNameAsync(DockAssignment)
+    activate DREPO
+    DREPO -> DB : SELECT * FROM Docks WHERE Name = ?
+    activate DB
+    DB --> DREPO : Dock or null
+    deactivate DB
+    DREPO --> SVC : Dock or null
+    deactivate DREPO
+
+    alt Dock not found
+        SVC --> CTRL : throws BusinessRuleViolationException("Dock does not exist")
+        CTRL --> SPA : 400 Bad Request + "Dock not found"
+        SPA --> OFFICER : showError("Invalid dock assignment")
+        deactivate CTRL
+
+    end alt
+
+    SVC -> NREPO : GetByDockAndTimeRangeAsync(dockAssignment, ETA, ETD)
+    activate NREPO
+    NREPO -> DB : SELECT * FROM VesselVisitNotifications WHERE DockAssignment = ? AND ...time overlap...
+    activate DB
+    DB --> NREPO : List<VesselVisitNotification>
+    deactivate DB
+    NREPO --> SVC : List<VesselVisitNotification>
+    deactivate NREPO
+
+    alt Conflicting schedule found
+        SVC --> CTRL : throws BusinessRuleViolationException("Dock already booked")
+        CTRL --> SPA : 400 Bad Request + "Conflict"
+        SPA --> OFFICER : showError("Dock already booked for the selected period")
+        deactivate CTRL
+
+    end alt
+end
+
+' ========================= APPROVAL =========================
+group Approve and Save
+    SVC -> SVC : Update entity fields\nStatus = Approved\nDockAssignment = DockAssignment\nApprovedBy = officerId\nApprovedAt = UtcNow
+    note right of SVC
+        Updates notification to Approved\nand logs officer and timestamp
+    end note
+
+    SVC -> NREPO : UpdateAsync(notification)
+    activate NREPO
+    NREPO -> DB : UPDATE VesselVisitNotifications SET ... Status='Approved' ...
+    activate DB
+    DB --> NREPO : success
+    deactivate DB
+    NREPO --> SVC : success
+    deactivate NREPO
+
+    SVC --> CTRL : success
+    deactivate SVC
+end
+
+' ========================= RESPONSE =========================
+group Return Result
+    CTRL --> SPA : 204 No Content
+    deactivate CTRL
+
+    SPA --> OFFICER : showSuccess("Notification approved successfully")
+end
+
+' ========================= ERROR HANDLING =========================
+alt Dock conflict or invalid dock
+    SVC --> CTRL : throws BusinessRuleViolationException
+    CTRL --> SPA : 400 Bad Request
+    SPA --> OFFICER : showError("Dock conflict or invalid dock")
+end
+
+alt Internal server error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> OFFICER : showError("System error during approval")
+end
+
+@enduml

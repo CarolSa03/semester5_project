@@ -1,0 +1,21 @@
+@startuml
+title Level 1 Sequence Diagram (SD) - REGISTER/ADD User Story
+autonumber
+
+actor ":Shipping Agent Representitve" as SAR
+participant ":Port Management" as System
+
+SAR -> System: Asks to create a new resource
+activate System
+
+
+    System -->> SAR: asks to insert the necessary data
+    
+    SAR -> System : inserted data
+
+    System -->> SAR: resource created / Error in data
+
+
+deactivate System
+
+@enduml

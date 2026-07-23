@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Vessel Visit Notification - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .detail-header h2 {
+            font-size: 1.5rem;
+            color: #1e3a5f;
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .detail-item {
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .detail-item.full {
+            grid-column: 1 / -1;
+        }
+
+        .detail-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            color: #111827;
+        }
+
+        .detail-value.empty {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .badge-inprogress {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-pending {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-withdrawn {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin: 2rem 0 1rem 0;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .container-list {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .container-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 1rem;
+        }
+
+        .container-header {
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-bottom: 0.5rem;
+        }
+
+        .container-details {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .officer-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .officer-name {
+            font-weight: 600;
+            color: #1e3a5f;
+        }
+
+        @media (max-width: 768px) {
+            .detail-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚢 Port Management System - Vessel Visit Notification</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div id="loading" class="loading">Loading notification details...</div>
+
+            <div id="content" style="display: none;">
+                <div class="detail-header">
+                    <h2 id="business-id">Notification Details</h2>
+                    <div class="detail-actions">
+                        <a href="list.html" class="btn btn-secondary">← Back</a>
+                        <a href="#" id="edit-btn" class="btn btn-primary" style="display: none;">Edit</a>
+                    </div>
+                </div>
+
+                <!-- Basic Information -->
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Business ID</div>
+                        <div class="detail-value" id="detail-business-id"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <div id="status-badge"></div>
+                    </div>
+
+                    <div class="detail-item full">
+                        <div class="detail-label">Vessel</div>
+                        <div class="detail-value" id="vessel-info"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Expected Arrival (ETA)</div>
+                        <div class="detail-value" id="eta"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Expected Departure (ETD)</div>
+                        <div class="detail-value" id="etd"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Dock Assignment</div>
+                        <div class="detail-value" id="dock"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Shipping Agent Representative</div>
+                        <div class="detail-value" id="agent-rep"></div>
+                    </div>
+                </div>
+
+                <!-- Cargo Manifests -->
+                <div class="section-title">Cargo Manifests</div>
+
+                <h3 style="margin: 1rem 0 0.75rem 0; color: #374151;">Unloading Manifest</h3>
+                <div class="container-list" id="unloading-containers"></div>
+
+                <h3 style="margin: 2rem 0 0.75rem 0; color: #374151;">Loading Manifest</h3>
+                <div class="container-list" id="loading-containers"></div>
+
+                <!-- Crew Information -->
+                <div class="section-title">Crew Information</div>
+
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Captain Name</div>
+                        <div class="detail-value" id="captain-name"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Total Crew Count</div>
+                        <div class="detail-value" id="crew-count"></div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 1rem 0 0.75rem 0; color: #374151;">Safety Officers</h3>
+                <div id="safety-officers"></div>
+
+                <!-- Approval/Rejection Info -->
+                <div id="approval-section" style="display: none;">
+                    <div class="section-title">Approval Details</div>
+                    <div class="detail-grid" id="approval-details"></div>
+                </div>
+
+                <!-- Metadata -->
+                <div class="section-title">Metadata</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Created At</div>
+                        <div class="detail-value" id="created-at"></div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-label">Last Updated</div>
+                        <div class="detail-value" id="updated-at"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const businessId = urlParams.get('id');
+
+        if (!businessId) {
+            alert('No notification ID provided');
+            window.location.href = 'list.html';
+        }
+
+        async function loadNotification() {
+            try {
+                const response = await fetch(`${API_BASE}/vessel-visit-notifications/${encodeURIComponent(businessId)}`);
+                if (!response.ok) throw new Error('Notification not found');
+
+                const notification = await response.json();
+
+                // Header
+                document.getElementById('business-id').textContent = `Notification: ${notification.businessId}`;
+
+                // Basic Info
+                document.getElementById('detail-business-id').textContent = notification.businessId;
+
+                const statusBadge = document.createElement('span');
+                statusBadge.className = `badge ${getStatusClass(notification.status)}`;
+                statusBadge.textContent = notification.status;
+                document.getElementById('status-badge').appendChild(statusBadge);
+
+                document.getElementById('vessel-info').textContent = notification.vessel
+                    ? `${notification.vessel.name} (IMO: ${notification.vessel.imo})`
+                    : 'Not specified';
+
+                document.getElementById('eta').textContent = formatDate(notification.eta);
+                document.getElementById('etd').textContent = formatDate(notification.etd);
+                document.getElementById('dock').textContent = notification.dockAssignment || 'Not assigned';
+                document.getElementById('agent-rep').textContent = notification.shippingAgentRepresentative?.name || 'Not assigned';
+
+                // Show edit button only for InProgress
+                if (notification.status === 'InProgress') {
+                    const editBtn = document.getElementById('edit-btn');
+                    editBtn.style.display = 'inline-block';
+                    editBtn.href = `edit.html?id=${encodeURIComponent(businessId)}`;
+                }
+
+                // Cargo Manifests
+                renderCargoManifests(notification.cargoManifests);
+
+                // Crew Info
+                if (notification.crew) {
+                    document.getElementById('captain-name').textContent = notification.crew.captainName || 'Not specified';
+                    document.getElementById('crew-count').textContent = notification.crew.crewCount || 'Not specified';
+                    renderSafetyOfficers(notification.crew.safetyOfficers);
+                } else {
+                    document.getElementById('captain-name').textContent = 'Not specified';
+                    document.getElementById('crew-count').textContent = 'Not specified';
+                }
+
+                // Approval/Rejection details
+                if (notification.status === 'Approved' || notification.status === 'Rejected') {
+                    renderApprovalDetails(notification);
+                }
+
+                // Metadata
+                document.getElementById('created-at').textContent = formatDate(notification.createdAt);
+                document.getElementById('updated-at').textContent = formatDate(notification.updatedAt) || 'Never';
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load notification details');
+                window.location.href = 'list.html';
+            }
+        }
+
+        function renderCargoManifests(manifests) {
+            if (!manifests || manifests.length === 0) {
+                document.getElementById('unloading-containers').innerHTML = '<p style="color: #6b7280; text-align: center; padding: 1rem;">No containers</p>';
+                document.getElementById('loading-containers').innerHTML = '<p style="color: #6b7280; text-align: center; padding: 1rem;">No containers</p>';
+                return;
+            }
+
+            const unloadingManifest = manifests.find(m => m.type === 'Unloading');
+            const loadingManifest = manifests.find(m => m.type === 'Loading');
+
+            renderContainers('unloading-containers', unloadingManifest?.containers);
+            renderContainers('loading-containers', loadingManifest?.containers);
+        }
+
+        function renderContainers(containerId, containers) {
+            const container = document.getElementById(containerId);
+
+            if (!containers || containers.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 1rem;">No containers</p>';
+                return;
+            }
+
+            container.innerHTML = containers.map(c => `
+                <div class="container-item">
+                    <div class="container-header">${c.containerId}</div>
+                    <div class="container-details">
+                        <strong>Type:</strong> ${c.cargoType}<br>
+                        <strong>Position:</strong> Bay ${c.bay}, Row ${c.row}, Tier ${c.tier}
+                        ${c.description ? `<br><strong>Description:</strong> ${c.description}` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderSafetyOfficers(officers) {
+            const container = document.getElementById('safety-officers');
+
+            if (!officers || officers.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280; padding: 1rem; background: #f9fafb; border-radius: 6px;">No safety officers assigned</p>';
+                return;
+            }
+
+            container.innerHTML = officers.map(o => `
+                <div class="officer-item">
+                    <div class="officer-name">${o.name}</div>
+                    <div class="container-details">
+                        Citizen ID: ${o.citizenId} | Nationality: ${o.nationality}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderApprovalDetails(notification) {
+            const section = document.getElementById('approval-section');
+            section.style.display = 'block';
+
+            const detailsHtml = notification.status === 'Approved'
+                ? `
+                    <div class="detail-item">
+                        <div class="detail-label">Approved By</div>
+                        <div class="detail-value">${notification.approvedBy || 'Unknown'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Approved At</div>
+                        <div class="detail-value">${formatDate(notification.approvedAt)}</div>
+                    </div>
+                    ${notification.approvalNotes ? `
+                        <div class="detail-item full">
+                            <div class="detail-label">Approval Notes</div>
+                            <div class="detail-value">${notification.approvalNotes}</div>
+                        </div>
+                    ` : ''}
+                `
+                : `
+                    <div class="detail-item">
+                        <div class="detail-label">Rejected By</div>
+                        <div class="detail-value">${notification.rejectedBy || 'Unknown'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Rejected At</div>
+                        <div class="detail-value">${formatDate(notification.rejectedAt)}</div>
+                    </div>
+                    ${notification.rejectionReason ? `
+                        <div class="detail-item full">
+                            <div class="detail-label">Rejection Reason</div>
+                            <div class="detail-value">${notification.rejectionReason}</div>
+                        </div>
+                    ` : ''}
+                `;
+
+            document.getElementById('approval-details').innerHTML = detailsHtml;
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'InProgress': 'badge-inprogress',
+                'PendingApproval': 'badge-pending',
+                'Approved': 'badge-approved',
+                'Rejected': 'badge-rejected',
+                'Withdrawn': 'badge-withdrawn'
+            };
+            return classes[status] || 'badge-inprogress';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-GB', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        loadNotification();
+    </script>
+</body>
+
+</html>

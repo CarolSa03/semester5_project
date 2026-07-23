@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Storage Area - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        label .required {
+            color: #dc2626;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        textarea {
+            min-height: 100px;
+        }
+
+        select[multiple] {
+            min-height: 150px;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .field-error {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        input.invalid,
+        select.invalid,
+        textarea.invalid {
+            border-color: #dc2626;
+        }
+
+        .help-text {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .id-display {
+            background: #f9fafb;
+            padding: 0.75rem;
+            border-radius: 4px;
+            color: #6b7280;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚚 Port Management System - Edit Storage Area</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2 style="margin-bottom: 1.5rem;">Edit Storage Area</h2>
+
+            <div id="message-container"></div>
+            <div id="content">
+                <div class="loading">Loading storage area details...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const storageId = urlParams.get('id');
+
+        if (!storageId) {
+            document.getElementById('content').innerHTML =
+                '<div class="error">Storage area ID is required</div>';
+        } else {
+            loadData();
+        }
+
+        let allDocks = [];
+
+        async function loadData() {
+            try {
+                const [docksResponse, storageResponse] = await Promise.all([
+                    fetch(`${API_BASE}/Dock`),
+                    fetch(`${API_BASE}/StorageArea/${encodeURIComponent(storageId)}`)
+                ]);
+
+                if (!docksResponse.ok) throw new Error('Failed to load docks');
+                if (!storageResponse.ok) throw new Error('Storage area not found');
+
+                allDocks = await docksResponse.json();
+                const storage = await storageResponse.json();
+
+                renderForm(storage);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('content').innerHTML =
+                    `<div class="error">${error.message}</div>`;
+            }
+        }
+
+        function renderForm(storage) {
+            const form = `
+                <form id="edit-form">
+                    <div class="form-group">
+                        <label>Storage Area ID</label>
+                        <div class="id-display">${storage.id}</div>
+                        <div class="help-text">ID cannot be changed</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="type">Type <span class="required">*</span></label>
+                        <input type="text" id="type" required value="${storage.type}" maxlength="20">
+                        <div class="help-text">Type of storage (e.g., container, bulk)</div>
+                        <div class="field-error" id="type-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="location">Location <span class="required">*</span></label>
+                        <input type="text" id="location" required value="${storage.location}" maxlength="100">
+                        <div class="help-text">Physical location in the port</div>
+                        <div class="field-error" id="location-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="maxCapacityTEU">Maximum Capacity (TEU) <span class="required">*</span></label>
+                        <input type="number" id="maxCapacityTEU" required value="${storage.maxCapacityTEU}" min="0">
+                        <div class="field-error" id="maxCapacityTEU-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="currentCapacityTEU">Current Capacity (TEU) <span class="required">*</span></label>
+                        <input type="number" id="currentCapacityTEU" required value="${storage.currentCapacityTEU}" min="0">
+                        <div class="field-error" id="currentCapacityTEU-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="servedDocks">Served Docks</label>
+                        <select id="servedDocks" multiple>
+                            ${allDocks.map(dock => {
+                const isSelected = storage.servedDocks && storage.servedDocks.some(d => d.id === dock.id);
+                return `<option value="${dock.id}" ${isSelected ? 'selected' : ''}>${dock.name} - ${dock.location}</option>`;
+            }).join('')}
+                        </select>
+                        <div class="help-text">Hold Ctrl (Cmd on Mac) to select multiple docks</div>
+                        <div class="field-error" id="servedDocks-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" maxlength="500">${storage.notes || ''}</textarea>
+                        <div class="help-text">Additional notes or comments (max 500 characters)</div>
+                        <div class="field-error" id="notes-error"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">Update Storage Area</button>
+                        <a href="list.html" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('content').innerHTML = form;
+            document.getElementById('edit-form').addEventListener('submit', handleSubmit);
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            clearErrors();
+
+            const servedDocksSelect = document.getElementById('servedDocks');
+            const selectedDockIds = Array.from(servedDocksSelect.selectedOptions).map(opt => parseInt(opt.value));
+
+            const formData = {
+                id: storageId,
+                type: document.getElementById('type').value.trim(),
+                location: document.getElementById('location').value.trim(),
+                maxCapacityTEU: parseInt(document.getElementById('maxCapacityTEU').value),
+                currentCapacityTEU: parseInt(document.getElementById('currentCapacityTEU').value),
+                servedDocks: selectedDockIds,
+                notes: document.getElementById('notes').value.trim() || null
+            };
+
+            let isValid = true;
+
+            if (!formData.type || formData.type.length > 20) {
+                showFieldError('type', 'Type is required and max 20 characters');
+                isValid = false;
+            }
+
+            if (!formData.location || formData.location.length > 100) {
+                showFieldError('location', 'Location is required and max 100 characters');
+                isValid = false;
+            }
+
+            if (isNaN(formData.maxCapacityTEU) || formData.maxCapacityTEU < 0) {
+                showFieldError('maxCapacityTEU', 'Max capacity must be non-negative');
+                isValid = false;
+            }
+
+            if (isNaN(formData.currentCapacityTEU) || formData.currentCapacityTEU < 0) {
+                showFieldError('currentCapacityTEU', 'Current capacity must be non-negative');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Updating...';
+
+            try {
+                console.log('Sending:', formData);
+
+                const response = await fetch(`${API_BASE}/StorageArea/${encodeURIComponent(storageId)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    console.log('Error from backend:', error);
+                    throw new Error(error.message || error.error || 'Failed to update storage area');
+                }
+
+                showSuccess('Storage area updated successfully!');
+                setTimeout(() => window.location.href = `view.html?id=${encodeURIComponent(storageId)}`, 1500);
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Update Storage Area';
+            }
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+            document.querySelectorAll('input, select, textarea').forEach(el => el.classList.remove('invalid'));
+            document.getElementById('message-container').innerHTML = '';
+        }
+
+        function showFieldError(fieldName, message) {
+            document.getElementById(`${fieldName}-error`).textContent = message;
+            document.getElementById(fieldName).classList.add('invalid');
+        }
+
+        function showError(message) {
+            document.getElementById('message-container').innerHTML = `<div class="error">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showSuccess(message) {
+            document.getElementById('message-container').innerHTML = `<div class="success">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+
+</html>

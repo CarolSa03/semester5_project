@@ -1,0 +1,70 @@
+services:
+  postgres:
+    volumes:
+      - /srv/postgres-data:/var/lib/postgresql/data
+
+  mongo:
+    volumes:
+      - /srv/mongo-data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: port-backend
+    environment:
+      ASPNETCORE_URLS: "http://0.0.0.0:8080"
+      ASPNETCORE_ENVIRONMENT: "Staging"
+      ConnectionStrings__DefaultPostgres: "Host=postgres;Port=5432;Database=portdb;Username=dbadmin;Password=password123!"
+    expose:
+      - "8080"
+    depends_on:
+      - postgres
+      - prolog
+    networks:
+      - portnet
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: port-frontend
+    expose:
+      - "4173"
+    networks:
+      - portnet
+    restart: unless-stopped
+
+  prolog:
+    expose:
+      - "5001"
+
+  oem_backend:
+    environment:
+      MONGODB_URI: "mongodb://dbadmin:password123!@mongo:27017/oemdb?authSource=admin"
+    depends_on:
+      - mongo
+
+  nginx:
+    build:
+      context: ./nginx/
+      dockerfile: Dockerfile
+    container_name: port-nginx
+    depends_on:
+      - backend
+      - prolog
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /srv/project/public:/public
+      - /srv/project/allowed_ips:/etc/nginx/allowed_ips
+      - /srv/project/logs/nginx:/var/log/nginx
+      - /etc/nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - portnet
+    restart: unless-stopped
+

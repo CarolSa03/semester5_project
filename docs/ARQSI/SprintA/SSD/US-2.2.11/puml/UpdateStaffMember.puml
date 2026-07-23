@@ -1,0 +1,143 @@
+@startuml L5-UpdateStaffMember
+
+title Update Staff Member - Process View
+
+actor "Logistics Operator" as LO
+participant "EditStaffMember.html\n(SPA)" as SPA
+participant ":StaffMemberController" as CTRL
+participant ":StaffMemberService" as SVC
+participant ":QualificationService" as QSVC
+participant ":StaffMemberRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+' =============== USER INTERACTION ===============
+group Fill & Submit Form
+    LO -> SPA : editForm(shortName, email, phoneNumber,\nqualifications[], isAvailable)
+    note right of LO
+        Operator updates fields and clicks\n"Save Changes"
+    end note
+end
+
+' =============== REQUEST FLOW ===============
+group Submit Request
+    SPA -> CTRL : PATCH /api/StaffMember/{id}\n{ shortName, email, phoneNumber, qualifications[], isAvailable }
+    activate CTRL
+
+    CTRL -> SVC : UpdateAsync(id, UpdatingStaffMemberDto)
+    activate SVC
+end
+
+' =============== VALIDATION PHASE ===============
+group Validate and Retrieve Existing Entity
+    SVC -> REPO : GetByIdAsync(id)
+    activate REPO
+    REPO -> DB : SELECT * FROM StaffMembers WHERE Id = ?
+    activate DB
+    DB --> REPO : StaffMember or null
+    deactivate DB
+    REPO --> SVC : StaffMember or null
+    deactivate REPO
+
+    alt Staff member not found
+        SVC --> CTRL : null
+        CTRL --> SPA : 404 Not Found
+        SPA --> LO : "Staff member not found"
+        deactivate SVC
+        deactivate CTRL
+
+    end alt
+end
+
+group Field Validations
+    ' Validate name, contact and availability fields
+
+    note right of SVC
+        Validates provided fields\n(short name, email, phone number, etc.)
+    end note
+    ' Check duplicate email if changed
+    SVC -> REPO : ExistsByEmailAsync(dto.Email)
+    activate REPO
+    REPO -> DB : SELECT COUNT(*) FROM StaffMembers WHERE Email = ? AND Id != ?
+    activate DB
+    DB --> REPO : 0
+    deactivate DB
+    REPO --> SVC : false
+    deactivate REPO
+
+    ' Check duplicate phone if changed
+    SVC -> REPO : ExistsByPhoneNumberAsync(dto.PhoneNumber)
+    activate REPO
+    REPO -> DB : SELECT COUNT(*) FROM StaffMembers WHERE PhoneNumber = ? AND Id != ?
+    activate DB
+    DB --> REPO : 0
+    deactivate DB
+    REPO --> SVC : false
+    deactivate REPO
+
+    ' Validate qualifications by descriptive name (if updated)
+    SVC -> QSVC : GetQualificationIdsByNameAsync(dto.qualifications)
+    note right of SVC
+        Ensures that all provided qualification names\nexist in the system and retrieves their IDs
+    end note
+    activate QSVC
+    QSVC -> DB : SELECT * FROM Qualifications WHERE DescriptiveName IN (names)
+    activate DB
+    DB --> QSVC : List<Qualification>
+    deactivate DB
+    QSVC --> SVC : List<Qualification>
+    deactivate QSVC
+end
+
+' =============== UPDATE PHASE ===============
+group Update Staff Member Entity
+    SVC -> SVC : Update staffMember fields\n(shortName, email, phone, qualifications, isAvailable)
+    note right of SVC
+        Applies changes to the retrieved entity\nand updates modification timestamp
+    end note
+    activate SVC
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : UPDATE StaffMembers SET ... WHERE Id = ?
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ConvertToDto(staffMember)
+    SVC --> CTRL : StaffMemberDto (updated)
+    deactivate SVC
+end
+
+' =============== RESPONSE PHASE ===============
+group Return Result
+    CTRL --> SPA : 200 OK + StaffMemberDto
+    deactivate CTRL
+
+    SPA --> LO : "Staff member updated successfully!"
+    note right of SPA
+        Displays success confirmation\nand refreshes staff details view
+    end note
+end
+
+' =============== ERROR HANDLING ===============
+alt Invalid input or duplicate found
+    SVC --> CTRL : throws ValidationException
+    CTRL --> SPA : 400 Bad Request + error message
+    SPA --> LO : showError("Validation failed or duplicate entry")
+end
+
+alt Qualification not found
+    QSVC --> SVC : throws Exception("Qualification not found")
+    SVC --> CTRL : 400 Bad Request
+    CTRL --> SPA : error
+    SPA --> LO : "Invalid qualification name"
+end
+
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> LO : showError("Failed to update staff member")
+end
+
+@enduml

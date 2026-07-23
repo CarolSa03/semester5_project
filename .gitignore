@@ -1,0 +1,40 @@
+# ======================================
+# ROOT .gitignore  (GLOBAL RULES)
+# Applies to the entire repository
+# ======================================
+
+############ OS FILES ############
+.DS_Store
+Thumbs.db
+
+############ IDE / EDITOR FILES ############
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+############ LOGS ############
+*.log
+logs/
+**/logs/
+
+############ VM RUNTIME FOLDERS ############
+# These folders exist on the VM and should never be committed
+public/
+backups/
+allowed_ips/
+
+############ DATABASE DUMPS ############
+*.sql
+*.bak
+*.db
+
+############ ENVIRONMENT FILES ############
+# Ignore any .env or environment-related configs anywhere
+**/.env
+**/.env.local
+**/.env.*.local
+
+config.env

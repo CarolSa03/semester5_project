@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Organization - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        label .required {
+            color: #dc2626;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .field-error {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        input.invalid {
+            border-color: #dc2626;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚢 Port Management System - Create Organization</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2 style="margin-bottom: 1.5rem;">New Shipping Agent Organization</h2>
+
+            <div id="message-container"></div>
+
+            <form id="create-form">
+                <div class="form-group">
+                    <label for="legalName">
+                        Legal Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="legalName" name="legalName" required placeholder="Enter official legal name">
+                    <div class="field-error" id="legalName-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="alternativeName">
+                        Alternative Name
+                    </label>
+                    <input type="text" id="alternativeName" name="alternativeName"
+                        placeholder="Enter trade or alternative name">
+                    <div class="field-error" id="alternativeName-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="taxNumber">
+                        Tax Number <span class="required">*</span>
+                    </label>
+                    <input type="text" id="taxNumber" name="taxNumber" required
+                        placeholder="Enter tax identification number">
+                    <div class="field-error" id="taxNumber-error"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="submit-btn">
+                        Create Organization
+                    </button>
+                    <a href="list.html" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+        const form = document.getElementById('create-form');
+        const submitBtn = document.getElementById('submit-btn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearErrors();
+
+            const formData = {
+                legalName: document.getElementById('legalName').value.trim(),
+                alternativeName: document.getElementById('alternativeName').value.trim(),
+                taxNumber: document.getElementById('taxNumber').value.trim()
+            };
+
+            let isValid = true;
+            if (!formData.legalName) {
+                showFieldError('legalName', 'Legal name is required');
+                isValid = false;
+            }
+            if (!formData.taxNumber) {
+                showFieldError('taxNumber', 'Tax number is required');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+
+            try {
+                const response = await fetch(`${API_BASE}/ShippingAgentOrganization`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to create organization');
+                }
+
+                const result = await response.json();
+                showSuccess('Organization created successfully!');
+
+                setTimeout(() => {
+                    window.location.href = `view.html?id=${result.id}`;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message || 'Failed to create organization. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Organization';
+            }
+        });
+
+        function clearErrors() {
+            document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+            document.querySelectorAll('input').forEach(el => el.classList.remove('invalid'));
+            document.getElementById('message-container').innerHTML = '';
+        }
+
+        function showFieldError(fieldName, message) {
+            const errorEl = document.getElementById(`${fieldName}-error`);
+            const inputEl = document.getElementById(fieldName);
+            errorEl.textContent = message;
+            inputEl.classList.add('invalid');
+        }
+
+        function showError(message) {
+            document.getElementById('message-container').innerHTML =
+                `<div class="error">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showSuccess(message) {
+            document.getElementById('message-container').innerHTML =
+                `<div class="success">${message}</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+
+</html>

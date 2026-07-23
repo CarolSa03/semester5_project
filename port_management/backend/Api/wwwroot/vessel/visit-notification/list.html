@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vessel Visit Notifications - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-inprogress {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-pending {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-withdrawn {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚢 Port Management System - Vessel Visit Notifications</h1>
+    </div>
+
+    <div class="container">
+        <div class="actions">
+            <h2>All Notifications</h2>
+            <a href="create.html" class="btn btn-primary">+ New Notification</a>
+        </div>
+
+        <div id="error-container"></div>
+
+        <div class="card">
+            <div id="loading" class="loading">Loading notifications...</div>
+            <div id="content" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Business ID</th>
+                            <th>Vessel</th>
+                            <th>ETA / ETD</th>
+                            <th>Dock</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <h3>No Notifications Found</h3>
+                <p>Create your first vessel visit notification to get started.</p>
+                <br>
+                <a href="create.html" class="btn btn-primary">+ Create Notification</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch(`${API_BASE}/vessel-visit-notifications`);
+                if (!response.ok) throw new Error('Failed to load notifications');
+
+                const notifications = await response.json();
+
+                document.getElementById('loading').style.display = 'none';
+
+                if (notifications.length === 0) {
+                    document.getElementById('empty-state').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('content').style.display = 'block';
+                renderTable(notifications);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').style.display = 'none';
+                showError('Failed to load notifications. Make sure the API is running.');
+            }
+        }
+
+        function renderTable(notifications) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            notifications.forEach(n => {
+                const statusClass = getStatusClass(n.status);
+                const vesselName = n.vessel?.name || 'Unknown Vessel';
+                const eta = formatDate(n.eta);
+                const etd = formatDate(n.etd);
+                const created = formatDate(n.createdAt);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${escapeHtml(n.businessId)}</strong></td>
+                    <td>${escapeHtml(vesselName)}</td>
+                    <td>${eta}<br><small style="color: #6b7280;">${etd}</small></td>
+                    <td>${escapeHtml(n.dockAssignment || '-')}</td>
+                    <td><span class="badge ${statusClass}">${n.status}</span></td>
+                    <td>${created}</td>
+                    <td>
+                        <div class="actions-cell">
+                            <a href="view.html?id=${encodeURIComponent(n.businessId)}" class="btn btn-secondary btn-small">View</a>
+                            ${n.status === 'InProgress' ? `<a href="edit.html?id=${encodeURIComponent(n.businessId)}" class="btn btn-primary btn-small">Edit</a>` : ''}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'InProgress': 'badge-inprogress',
+                'PendingApproval': 'badge-pending',
+                'Approved': 'badge-approved',
+                'Rejected': 'badge-rejected',
+                'Withdrawn': 'badge-withdrawn'
+            };
+            return classes[status] || 'badge-inprogress';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-GB', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            document.getElementById('error-container').innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        loadNotifications();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,106 @@
+@startuml L5-CreateVesselType
+
+title Create Vessel Type - Process View
+
+actor "Port Authority Officer" as ADMIN
+participant "CreateVesselType.html\n(SPA)" as SPA
+participant ":VesselTypeController" as CTRL
+participant ":VesselTypeService" as SVC
+participant ":VesselTypeRepository" as REPO
+participant ":PortManagementDB" as DB
+
+' =============== USER INTERACTION ===============
+group Fill & Submit Form
+    ADMIN -> SPA : fillForm(name, description,\ncapacityTEU, maxRows, maxBays, maxTiers)
+    note right of ADMIN
+        Administrator fills the vessel type form\nand clicks "Create Vessel Type"
+    end note
+end
+
+' =============== REQUEST FLOW ===============
+group Submit Request
+    SPA -> CTRL : POST /api/VesselType\n{VesselTypeDto}
+    activate CTRL
+
+    CTRL -> SVC : AddAsync(VesselTypeDto)
+    activate SVC
+end
+
+' =============== VALIDATION PHASE ===============
+group Validate Input
+    SVC -> SVC : ValidateVesselType(dto)
+    note right of SVC
+        Validates all required fields:\nname, description, capacity, maxRows,\nmaxBays, maxTiers
+    end note
+
+    ' Check for duplicate name
+    SVC -> REPO : GetByNameAsync(dto.Name)
+    activate REPO
+    REPO -> DB : SELECT * FROM VesselTypes WHERE Name = ?
+    activate DB
+    DB --> REPO : null (no duplicates)
+    deactivate DB
+    REPO --> SVC : null
+    deactivate REPO
+end
+
+' =============== CREATION PHASE ===============
+group Create Vessel Type Entity
+    SVC -> SVC : new VesselType(dto)
+    note right of SVC
+        Creates new VesselType entity with\nIsActive = true and CreatedAt = now()
+    end note
+
+    SVC -> REPO : AddAsync(vesselType)
+    activate REPO
+    REPO -> DB : INSERT INTO VesselTypes(...)
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> REPO : SaveChangesAsync()
+    activate REPO
+    REPO -> DB : COMMIT TRANSACTION
+    activate DB
+    DB --> REPO : success
+    deactivate DB
+    REPO --> SVC : success
+    deactivate REPO
+
+    SVC -> SVC : ConvertToDto(vesselType)
+    SVC --> CTRL : VesselTypeDto
+    deactivate SVC
+end
+
+' =============== RESPONSE PHASE ===============
+group Return Result
+    CTRL --> SPA : 201 Created + VesselTypeDto
+    deactivate CTRL
+
+    SPA --> ADMIN : "Vessel type created successfully!"
+    note right of SPA
+        Displays confirmation and redirects\nto vessel type detail view
+    end note
+end
+
+' =============== ERROR HANDLING ===============
+alt Validation failed
+    SVC --> CTRL : throws DomainValidationException
+    CTRL --> SPA : 400 Bad Request + error message
+    SPA --> ADMIN : showError("Validation failed")
+end
+
+alt Duplicate name found
+    SVC --> CTRL : throws BusinessRuleViolationException
+    CTRL --> SPA : 400 Bad Request + "Vessel type already exists"
+    SPA --> ADMIN : showError("Duplicate vessel type name")
+end
+
+alt Internal Server Error
+    CTRL --> SPA : 500 Internal Server Error
+    SPA --> ADMIN : showError("Failed to create vessel type")
+end
+
+@enduml

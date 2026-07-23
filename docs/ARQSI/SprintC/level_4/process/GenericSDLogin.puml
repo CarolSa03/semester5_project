@@ -1,0 +1,131 @@
+@startuml
+title Level 4 Sequence Diagram (SD) - Login Process (with OEM Flow)
+autonumber
+
+actor "User" as User
+participant "LoginComponent" as LoginComp
+participant "AuthService" as AuthService
+participant "OAuthService\n(Library)" as OAuth
+participant "UserController\n(MasterData)" as Controller
+participant "UserService" as Service
+participant "UserRepository" as Repo
+database "SQL Database" as DB
+
+== Frontend Login Flow ==
+
+User -> LoginComp: Clicks Login
+activate LoginComp
+
+LoginComp -> AuthService: login()
+activate AuthService
+
+AuthService -> OAuth: initCodeFlow()
+activate OAuth
+
+OAuth -> OAuth: Redirects for Authentication
+deactivate OAuth
+deactivate AuthService
+deactivate LoginComp
+
+User -> OAuth: Authenticates
+OAuth -->> OAuth: Redirects back with Auth Code/Token
+activate OAuth
+
+OAuth -> OAuth: Validates Token
+OAuth -> AuthService: Event: token_received
+activate AuthService
+
+AuthService -> AuthService: handleSuccessfulLogin()
+activate AuthService
+
+AuthService -> OAuth: getIdentityClaims()
+OAuth -->> AuthService: Claims (sub, email, etc.)
+
+AuthService -> Controller: GET /api/User/role?iamProviderId={sub}
+activate Controller
+
+Controller -> Service: GetUserRoleByIamProviderIdAsync(sub)
+activate Service
+
+Service -> Repo: GetByIamIdAsync(sub)
+activate Repo
+
+Repo -> DB: Query User by IAM ID
+activate DB
+DB -->> Repo: User Data
+deactivate DB
+
+Repo -->> Service: User Domain Object
+deactivate Repo
+
+Service -->> Controller: UserRoleDTO
+deactivate Service
+
+Controller -->> AuthService: JSON { email, role, status }
+deactivate Controller
+
+alt User Status is Active
+    AuthService -> AuthService: Set CurrentUser & IsAuthenticated = true
+    AuthService -->> LoginComp: (Signal Update)
+    activate LoginComp
+    LoginComp -> User: Redirects to Dashboard
+    deactivate LoginComp
+else User Not Active / Not Found
+    AuthService -> AuthService: Logout & Clear Session
+    AuthService -->> User: Shows Error Alert
+end
+
+deactivate AuthService
+deactivate AuthService
+deactivate OAuth
+
+== OEM API Request Authentication ==
+
+note over User, DB: When Frontend calls OEM endpoints
+
+participant "OEM Controller" as OEMController
+participant "AuthMiddleware\n(OEM)" as AuthMW
+participant "AuthorizationMiddleware\n(OEM)" as AuthzMW
+participant "MasterDataService\n(OEM)" as MDService
+database "MongoDB" as OEMDb
+
+User -> OEMController: API Request with Bearer Token
+activate OEMController
+
+OEMController -> AuthMW: authenticate()
+activate AuthMW
+
+AuthMW -> OAuth: verifyIdToken(token)
+OAuth -->> AuthMW: Token Payload (sub, email, etc.)
+
+AuthMW -> MDService: getUserById(sub, token)
+activate MDService
+
+MDService -> Controller: GET /api/user/role?iamProviderId={sub}
+activate Controller
+Controller -->> MDService: { email, name, role, status }
+deactivate Controller
+
+MDService -->> AuthMW: MasterDataUser { role }
+deactivate MDService
+
+AuthMW -> AuthMW: Create AuthenticatedUser with roles
+AuthMW -->> OEMController: req.user = AuthenticatedUser
+deactivate AuthMW
+
+OEMController -> AuthzMW: authorize(requiredRoles)
+activate AuthzMW
+
+alt User has required role
+    AuthzMW -->> OEMController: next()
+else Unauthorized
+    AuthzMW -->> User: 403 Forbidden
+end
+deactivate AuthzMW
+
+OEMController -> OEMDb: Execute operation
+OEMDb -->> OEMController: Result
+OEMController -->> User: API Response
+deactivate OEMController
+
+@enduml

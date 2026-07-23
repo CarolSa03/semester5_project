@@ -1,0 +1,21 @@
+@startuml
+title Level 1 Sequence Diagram (SD) - REGISTER/ADD User Story
+autonumber
+
+actor ":User" as User
+participant ":System" as System
+
+User -> System: Submits form to create new resource
+activate System
+
+alt Resource is added successfully
+    System -->> User: Shows success toast and redirects/updates view
+else Invalid data provided (e.g., missing fields, validation errors)
+    System -->> User: Shows error toast: Invalid data / Business rule violation
+else A related resource does not exist
+    System -->> User: Shows error toast: Related resource not found
+end
+
+deactivate System
+
+@enduml

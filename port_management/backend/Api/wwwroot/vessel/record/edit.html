@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Vessel Record - Port Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #1e3a5f;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        label .required {
+            color: #dc2626;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .field-error {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        input.invalid,
+        select.invalid {
+            border-color: #dc2626;
+        }
+
+        .status-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-toggle input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚢 Port Management System - Edit Vessel Record</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div id="loading" class="loading">Loading vessel record...</div>
+
+            <div id="content" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">Edit Vessel Record</h2>
+
+                <div id="message-container"></div>
+
+                <form id="edit-form">
+                    <div class="form-group">
+                        <label for="imo">IMO Number <span class="required">*</span></label>
+                        <input type="text" id="imo" required disabled>
+                        <small style="color: #6b7280;">IMO number cannot be changed</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="name">Vessel Name <span class="required">*</span></label>
+                        <input type="text" id="name" required>
+                        <div class="field-error" id="name-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vesselType">Vessel Type <span class="required">*</span></label>
+                        <select id="vesselType" required>
+                            <option value="">Select vessel type</option>
+                        </select>
+                        <div class="field-error" id="vesselType-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="owner">Owner / Operator <span class="required">*</span></label>
+                        <input type="text" id="owner" required>
+                        <div class="field-error" id="owner-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="status-toggle">
+                            <input type="checkbox" id="isActive">
+                            <label for="isActive" style="margin: 0;">Vessel is Active</label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">Save Changes</button>
+                        <a href="list.html" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5164/api';
+
+        async function loadVesselRecords() {
+            try {
+                const response = await fetch(`${API_BASE}/VesselRecord`);
+                if (!response.ok) throw new Error('Failed to load vessel records');
+
+                const vessels = await response.json();
+
+                document.getElementById('loading').style.display = 'none';
+
+                if (vessels.length === 0) {
+                    document.getElementById('empty-state').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('content').style.display = 'block';
+                renderTable(vessels);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').style.display = 'none';
+                showError('Failed to load vessel records. Make sure the API is running.');
+            }
+        }
+
+        function renderImo(imo) {
+            if (typeof imo === "object" && imo !== null && "value" in imo) return imo.value;
+            return imo;
+        }
+
+        function renderTable(vessels) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            vessels.forEach(v => {
+                const imoString = renderImo(v.imo);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                <td><strong>${escapeHtml(imoString)}</strong></td>
+                <td>${escapeHtml(v.name)}</td>
+                <td>${v.vesselType ? escapeHtml(v.vesselType.name) : '-'}</td>
+                <td>${escapeHtml(v.owner)}</td>
+                <td>
+                    <span class="badge ${v.isActive ? 'badge-active' : 'badge-inactive'}">
+                        ${v.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                </td>
+                <td>
+                    <div class="actions-cell">
+                        <a href="view.html?imo=${encodeURIComponent(imoString)}" class="btn btn-secondary btn-small">View</a>
+                        <a href="edit.html?imo=${encodeURIComponent(imoString)}" class="btn btn-primary btn-small">Edit</a>
+                    </div>
+                </td>
+            `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            document.getElementById('error-container').innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        loadVesselRecords();
+    </script>
+</body>
+
+</html>

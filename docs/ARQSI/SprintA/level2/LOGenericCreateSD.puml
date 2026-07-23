@@ -1,0 +1,28 @@
+@startuml
+title Level 2 Sequence Diagram (SD) - CREATE Resource User Story
+autonumber
+
+actor ":Logistics Officer" as LO
+participant ":Visualization (UI)" as UI
+participant ":Port Management" as POB
+
+LO -> UI: asks to create resource
+activate UI
+
+    UI -->> LO: ask for data
+    
+    LO -> UI: resource data
+    activate UI
+    
+        UI -> POB: request the creation of resource
+        activate POB
+        POB -->> UI: resource created / error in data
+        deactivate POB
+    
+    UI -->> LO: resource created / error in data
+    deactivate UI
+
+deactivate UI
+
+@enduml
+

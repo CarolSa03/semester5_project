@@ -1,0 +1,103 @@
+@startuml L5-UpdateVessel
+title Update Vessel Record - Process View
+
+actor "Port Authority Officer" as PAO
+participant ":SPA" as SPA
+participant ":VesselsController" as CTRL
+participant ":VesselService" as SVC
+participant ":VesselTypeService" as VT_SVC
+participant ":VesselRepository" as REPO
+participant ":PortLogisticsDB" as DB
+
+group Update Vessel
+  PAO -> SPA : openEditForm(id)
+  activate SPA
+
+  SPA -> CTRL : PATCH /api/vessels/{id}\n{UpdateVesselDto}
+  activate CTRL
+
+  CTRL -> SVC : UpdateAsync(id, dto)
+  activate SVC
+
+  ' Load entity
+  SVC -> REPO : GetByIdAsync(id)
+  activate REPO
+  REPO -> DB : SELECT * FROM Vessels WHERE Id=?
+  activate DB
+  DB --> REPO : entity or null
+  deactivate DB
+  REPO --> SVC : vessel
+  deactivate REPO
+
+  alt not found
+    SVC --> CTRL : 404 Not Found
+    CTRL --> SPA : show "not found"
+    SPA --> PAO : notify
+  else found
+    SVC -> SVC : ValidateIMOFormat(dto.imoNumber)
+    alt invalid IMO
+      SVC --> CTRL : 400 Bad Request
+      CTRL --> SPA : show errors
+      SPA --> PAO : correct data
+    else valid IMO
+      ' Ensure new IMO is unique
+      SVC -> REPO : ExistsByImoExceptIdAsync(dto.imoNumber, id)
+      activate REPO
+      REPO -> DB : SELECT COUNT(*) ...
+      activate DB
+      DB --> REPO : 0
+      deactivate DB
+      REPO --> SVC : false
+      deactivate REPO
+
+      ' Check vessel type
+      SVC -> VT_SVC : GetByIdAsync(dto.vesselTypeId)
+      activate VT_SVC
+      VT_SVC -> DB : SELECT FROM VesselTypes WHERE Id=?
+      activate DB
+      DB --> VT_SVC : vesselType or null
+      deactivate DB
+
+      alt type not found
+        VT_SVC --> SVC : null
+        SVC --> CTRL : 400 Bad Request
+        CTRL --> SPA : show error
+        SPA --> PAO : correct fields
+      else type valid
+        VT_SVC --> SVC : vesselTypeDto
+        deactivate VT_SVC
+
+        SVC -> SVC : vessel.UpdateFrom(dto)
+
+        SVC -> REPO : UpdateAsync(vessel)
+        activate REPO
+        REPO -> DB : UPDATE Vessels ...
+        activate DB
+        DB --> REPO : updated
+        deactivate DB
+        REPO --> SVC : success
+        deactivate REPO
+
+        SVC -> REPO : SaveChangesAsync()
+        activate REPO
+        REPO -> DB : SaveChanges()
+        activate DB
+        DB --> REPO : success
+        deactivate DB
+        REPO --> SVC : success
+        deactivate REPO
+
+        SVC -> SVC : ToDto(vessel)
+        SVC --> CTRL : VesselDto
+        deactivate SVC
+
+        CTRL --> SPA : 200 OK + VesselDto
+        deactivate CTRL
+
+        SPA --> PAO : updated successfully
+        deactivate SPA
+      end
+    end
+  end
+end
+@enduml
